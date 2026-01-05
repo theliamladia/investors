@@ -688,15 +688,15 @@ export default function InvestorsGame() {
                           Buy More
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedStock(stock);
-                            setTradeAmount(1);
-                            sellStock(stock);
-                          }}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
-                        >
-                          Sell
-                        </button>
+  onClick={() => {
+    setSelectedStock(stock);
+    setTradeAmount(amount);  // <-- Use the amount variable, not 1
+    sellStock(stock);
+  }}
+  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
+>
+  Sell All ({amount})
+</button>
                       </div>
                     </div>
                   );
