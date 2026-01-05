@@ -59,7 +59,7 @@ const supabase = {
     return data[0] || null;
   },
 
-  async createUser(username) {
+  async createUser(username, password) {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
       method: 'POST',
       headers: {
@@ -70,6 +70,7 @@ const supabase = {
       },
       body: JSON.stringify({
         username,
+        password,
         balance: 100,
         portfolio: {},
         history: []
@@ -104,6 +105,8 @@ const supabase = {
 export default function InvestorsGame() {
   const [currentUser, setCurrentUser] = useState(null);
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [stocks, setStocks] = useState(generateStocks());
@@ -165,6 +168,11 @@ export default function InvestorsGame() {
       return;
     }
 
+    if (!password.trim()) {
+      setError('Please enter a password');
+      return;
+    }
+
     if (!hasCredentials) {
       setError('Please add your Supabase credentials to the code');
       return;
@@ -179,14 +187,30 @@ export default function InvestorsGame() {
       
       let user = await supabase.getUser(username);
       
-      if (!user) {
+      if (user) {
+        // User exists - check password
+        if (user.password !== password) {
+          setError('Incorrect password');
+          setLoading(false);
+          return;
+        }
+        console.log('Login successful:', user);
+        setCurrentUser(user);
+        localStorage.setItem('investors-session', username);
+      } else {
+        // User doesn't exist
+        if (!isSignup) {
+          setError('User not found. Switch to Sign Up to create an account.');
+          setLoading(false);
+          return;
+        }
+        // Create new user
         console.log('User not found, creating new user');
-        user = await supabase.createUser(username);
+        user = await supabase.createUser(username, password);
+        console.log('Signup successful:', user);
+        setCurrentUser(user);
+        localStorage.setItem('investors-session', username);
       }
-      
-      console.log('Login successful:', user);
-      setCurrentUser(user);
-      localStorage.setItem('investors-session', username);
     } catch (err) {
       console.error('Full error:', err);
       setError('Login failed: ' + err.message);
@@ -291,17 +315,37 @@ export default function InvestorsGame() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !loading && handleLogin()}
               placeholder="Enter username"
               disabled={loading}
               className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 disabled:opacity-50"
             />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && !loading && handleLogin()}
+              placeholder="Enter password"
+              disabled={loading}
+              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            />
+            
+            <div className="flex items-center gap-2 text-sm text-blue-200">
+              <input
+                type="checkbox"
+                id="isSignup"
+                checked={isSignup}
+                onChange={(e) => setIsSignup(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="isSignup">Create new account (Sign Up)</label>
+            </div>
+            
             <button
               onClick={handleLogin}
               disabled={loading || !hasCredentials}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Loading...' : 'Login / Create Account'}
+              {loading ? 'Loading...' : (isSignup ? 'Sign Up' : 'Login')}
             </button>
             <p className="text-sm text-blue-200 text-center">
               New accounts start with 100 Floydbucks
