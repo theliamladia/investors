@@ -1,0 +1,635 @@
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react';
+
+// Supabase credentials
+const SUPABASE_URL = 'https://npurrvorjoxjxieyzyjr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wdXJydm9yam94anhpZXl6eWpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NDI4ODcsImV4cCI6MjA4MzIxODg4N30.FRCXF9Xfiuyi3ITQgXD6SopKtufeHd0MJ5dshPWPrOA';
+
+const SECTORS = {
+  tech: ['TechCorp', 'DataFlow', 'CloudNet', 'CyberSec', 'QuantumLabs', 'NeuralSoft', 'ByteDyne', 'CodeForge'],
+  energy: ['SolarMax', 'FusionTech', 'OilCore', 'WindGen', 'HydroPlus', 'NuclearOne'],
+  finance: ['MegaBank', 'CreditMax', 'InvestCo', 'FinServe', 'PayFlow', 'LoanStar'],
+  healthcare: ['MediCure', 'BioGen', 'PharmaCore', 'HealthPlus', 'GeneTech', 'CareNet'],
+  retail: ['ShopMart', 'FashionHub', 'GroceryKing', 'TechStore', 'HomeGoods'],
+  manufacturing: ['SteelWorks', 'AutoBuild', 'ChemCorp', 'PlastiCo', 'MetalForge'],
+  media: ['StreamNet', 'NewsGlobal', 'GameStudios', 'SocialHub', 'ContentMax'],
+  transport: ['AirlineGo', 'ShipCorp', 'RailExpress', 'CargoNet', 'LogiTrans'],
+  food: ['FastBite', 'BrewCo', 'FoodChain', 'BeveragePlus']
+};
+
+const generateStocks = () => {
+  const stocks = [];
+  let id = 0;
+  
+  Object.entries(SECTORS).forEach(([sector, companies]) => {
+    companies.forEach(name => {
+      const volatility = 0.5 + Math.random() * 4.5;
+      const basePrice = 10 + Math.random() * 490;
+      stocks.push({
+        id: id++,
+        symbol: name.substring(0, 4).toUpperCase(),
+        name,
+        sector,
+        price: basePrice,
+        history: [basePrice],
+        volatility,
+        trend: 0
+      });
+    });
+  });
+  
+  return stocks.slice(0, 50);
+};
+
+// Supabase API functions
+const supabase = {
+  async getUser(username) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=*`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data[0] || null;
+  },
+
+  async createUser(username) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        username,
+        balance: 100,
+        portfolio: {},
+        history: []
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data[0];
+  },
+
+  async updateUser(username, userData) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(userData)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data[0];
+  }
+};
+
+export default function InvestorsGame() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [username, setUsername] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [stocks, setStocks] = useState(generateStocks());
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [tradeAmount, setTradeAmount] = useState(1);
+  const [view, setView] = useState('market');
+  const [sortBy, setSortBy] = useState('symbol');
+  const [filterSector, setFilterSector] = useState('all');
+
+  // Check for credentials
+  const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+
+  // Load user session
+  useEffect(() => {
+    const loadSession = () => {
+      const session = localStorage.getItem('investors-session');
+      if (session) {
+        setUsername(session);
+      }
+    };
+    loadSession();
+  }, []);
+
+  // Auto-login if session exists
+  useEffect(() => {
+    if (username && !currentUser && hasCredentials) {
+      handleLogin();
+    }
+  }, [username]);
+
+  // Stock price updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStocks(prevStocks => 
+        prevStocks.map(stock => {
+          const change = (Math.random() - 0.5) * 2 * (stock.volatility / 100) * stock.price;
+          const newPrice = Math.max(1, stock.price + change);
+          const newHistory = [...stock.history.slice(-50), newPrice];
+          
+          return {
+            ...stock,
+            price: newPrice,
+            history: newHistory,
+            change: ((newPrice - stock.history[0]) / stock.history[0]) * 100
+          };
+        })
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogin = async () => {
+    if (!username.trim()) {
+      setError('Please enter a username');
+      return;
+    }
+
+    if (!hasCredentials) {
+      setError('Please add your Supabase credentials to the code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log('Attempting to fetch user:', username);
+      console.log('URL:', `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=*`);
+      
+      let user = await supabase.getUser(username);
+      
+      if (!user) {
+        console.log('User not found, creating new user');
+        user = await supabase.createUser(username);
+      }
+      
+      console.log('Login successful:', user);
+      setCurrentUser(user);
+      localStorage.setItem('investors-session', username);
+    } catch (err) {
+      console.error('Full error:', err);
+      setError('Login failed: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setUsername('');
+    localStorage.removeItem('investors-session');
+  };
+
+  const saveUser = async (userData) => {
+    try {
+      const updated = await supabase.updateUser(currentUser.username, userData);
+      setCurrentUser(updated);
+    } catch (err) {
+      console.error('Save failed:', err);
+      setError('Failed to save data');
+    }
+  };
+
+  const buyStock = async (stock) => {
+    const cost = stock.price * tradeAmount;
+    if (currentUser.balance >= cost) {
+      const newPortfolio = {
+        ...currentUser.portfolio,
+        [stock.id]: (currentUser.portfolio[stock.id] || 0) + tradeAmount
+      };
+      
+      const newHistory = [...currentUser.history, {
+        type: 'BUY',
+        symbol: stock.symbol,
+        amount: tradeAmount,
+        price: stock.price,
+        time: new Date().toISOString()
+      }];
+
+      await saveUser({
+        balance: currentUser.balance - cost,
+        portfolio: newPortfolio,
+        history: newHistory
+      });
+      
+      setTradeAmount(1);
+    }
+  };
+
+  const sellStock = async (stock) => {
+    const owned = currentUser.portfolio[stock.id] || 0;
+    if (owned >= tradeAmount) {
+      const revenue = stock.price * tradeAmount;
+      const newPortfolio = { ...currentUser.portfolio };
+      newPortfolio[stock.id] = owned - tradeAmount;
+      if (newPortfolio[stock.id] === 0) delete newPortfolio[stock.id];
+      
+      const newHistory = [...currentUser.history, {
+        type: 'SELL',
+        symbol: stock.symbol,
+        amount: tradeAmount,
+        price: stock.price,
+        time: new Date().toISOString()
+      }];
+
+      await saveUser({
+        balance: currentUser.balance + revenue,
+        portfolio: newPortfolio,
+        history: newHistory
+      });
+      
+      setTradeAmount(1);
+    }
+  };
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/20">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-2">INVESTORS</h1>
+            <p className="text-blue-200">Real-time stock trading simulation</p>
+          </div>
+          
+          {!hasCredentials && (
+            <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
+              <p className="text-yellow-200 text-sm">
+                ⚠️ Please add your Supabase credentials to the code (lines 7-8)
+              </p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          )}
+          
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && !loading && handleLogin()}
+              placeholder="Enter username"
+              disabled={loading}
+              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-blue-400 disabled:opacity-50"
+            />
+            <button
+              onClick={handleLogin}
+              disabled={loading || !hasCredentials}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Loading...' : 'Login / Create Account'}
+            </button>
+            <p className="text-sm text-blue-200 text-center">
+              New accounts start with 100 Floydbucks
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const portfolioValue = Object.entries(currentUser.portfolio).reduce((sum, [stockId, amount]) => {
+    const stock = stocks.find(s => s.id === parseInt(stockId));
+    return sum + (stock ? stock.price * amount : 0);
+  }, 0);
+
+  const totalValue = currentUser.balance + portfolioValue;
+
+  const filteredStocks = stocks
+    .filter(s => filterSector === 'all' || s.sector === filterSector)
+    .sort((a, b) => {
+      if (sortBy === 'symbol') return a.symbol.localeCompare(b.symbol);
+      if (sortBy === 'price') return b.price - a.price;
+      if (sortBy === 'change') return (b.change || 0) - (a.change || 0);
+      return 0;
+    });
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Header */}
+      <div className="bg-slate-800 border-b border-slate-700 p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">INVESTORS</h1>
+            <p className="text-sm text-slate-400">Welcome, {currentUser.username}</p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <p className="text-sm text-slate-400">Cash Balance</p>
+              <p className="text-xl font-bold text-green-400">
+                Ⓕ {currentUser.balance.toFixed(2)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-slate-400">Portfolio Value</p>
+              <p className="text-xl font-bold text-blue-400">
+                Ⓕ {portfolioValue.toFixed(2)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-slate-400">Total Net Worth</p>
+              <p className="text-xl font-bold text-yellow-400">
+                Ⓕ {totalValue.toFixed(2)}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="bg-slate-800 border-b border-slate-700">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setView('market')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'market' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Market
+            </button>
+            <button
+              onClick={() => setView('portfolio')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'portfolio' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Portfolio
+            </button>
+            <button
+              onClick={() => setView('history')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              History
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6">
+        {view === 'market' && (
+          <div className="grid grid-cols-3 gap-6">
+            {/* Stock List */}
+            <div className="col-span-2 space-y-4">
+              <div className="flex gap-4 mb-4">
+                <select
+                  value={filterSector}
+                  onChange={(e) => setFilterSector(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                >
+                  <option value="all">All Sectors</option>
+                  {Object.keys(SECTORS).map(sector => (
+                    <option key={sector} value={sector}>{sector.toUpperCase()}</option>
+                  ))}
+                </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                >
+                  <option value="symbol">Sort by Symbol</option>
+                  <option value="price">Sort by Price</option>
+                  <option value="change">Sort by Change</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                {filteredStocks.map(stock => {
+                  const change = stock.change || 0;
+                  const owned = currentUser.portfolio[stock.id] || 0;
+                  
+                  return (
+                    <div
+                      key={stock.id}
+                      onClick={() => setSelectedStock(stock)}
+                      className={`bg-slate-800 rounded-lg p-4 cursor-pointer transition hover:bg-slate-750 border ${
+                        selectedStock?.id === stock.id ? 'border-blue-400' : 'border-slate-700'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-bold">{stock.symbol}</h3>
+                            <span className="text-xs text-slate-400 uppercase">{stock.sector}</span>
+                            {owned > 0 && (
+                              <span className="text-xs bg-blue-600 px-2 py-1 rounded">
+                                Own: {owned}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-400">{stock.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold">Ⓕ {stock.price.toFixed(2)}</p>
+                          <p className={`text-sm flex items-center justify-end gap-1 ${
+                            change >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Trading Panel */}
+            <div className="space-y-4">
+              {selectedStock ? (
+                <>
+                  <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                    <h2 className="text-2xl font-bold mb-2">{selectedStock.symbol}</h2>
+                    <p className="text-slate-400 mb-4">{selectedStock.name}</p>
+                    <div className="text-3xl font-bold text-blue-400 mb-2">
+                      Ⓕ {selectedStock.price.toFixed(2)}
+                    </div>
+                    <p className="text-sm text-slate-400 mb-4">
+                      Volatility: {selectedStock.volatility.toFixed(1)}% | Sector: {selectedStock.sector}
+                    </p>
+                    
+                    <div className="h-48 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={selectedStock.history.map((price, i) => ({ price, i }))}>
+                          <XAxis dataKey="i" hide />
+                          <YAxis domain={['auto', 'auto']} hide />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                            formatter={(value) => [`Ⓕ ${value.toFixed(2)}`, 'Price']}
+                          />
+                          <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-slate-400 mb-2">Amount</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={tradeAmount}
+                          onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => buyStock(selectedStock)}
+                          disabled={currentUser.balance < selectedStock.price * tradeAmount}
+                          className="bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+                        >
+                          Buy
+                        </button>
+                        <button
+                          onClick={() => sellStock(selectedStock)}
+                          disabled={(currentUser.portfolio[selectedStock.id] || 0) < tradeAmount}
+                          className="bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+                        >
+                          Sell
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-slate-400 text-center">
+                        Cost: Ⓕ {(selectedStock.price * tradeAmount).toFixed(2)} | 
+                        Owned: {currentUser.portfolio[selectedStock.id] || 0}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 text-center text-slate-400">
+                  Select a stock to trade
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {view === 'portfolio' && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h2 className="text-2xl font-bold mb-6">Your Portfolio</h2>
+            {Object.keys(currentUser.portfolio).length === 0 ? (
+              <p className="text-slate-400 text-center py-8">No stocks owned yet</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(currentUser.portfolio).map(([stockId, amount]) => {
+                  const stock = stocks.find(s => s.id === parseInt(stockId));
+                  if (!stock) return null;
+                  
+                  const value = stock.price * amount;
+                  const change = stock.change || 0;
+                  
+                  return (
+                    <div key={stockId} className="bg-slate-700 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="text-lg font-bold">{stock.symbol}</h3>
+                          <p className="text-sm text-slate-400">{stock.name}</p>
+                          <p className="text-sm text-slate-300 mt-1">{amount} shares owned</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-blue-400">Ⓕ {value.toFixed(2)}</p>
+                          <p className="text-sm text-slate-400">@ Ⓕ {stock.price.toFixed(2)}</p>
+                          <p className={`text-sm flex items-center justify-end gap-1 ${
+                            change >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedStock(stock);
+                            setView('market');
+                          }}
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition text-sm"
+                        >
+                          Buy More
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedStock(stock);
+                            setTradeAmount(1);
+                            sellStock(stock);
+                          }}
+                          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
+                        >
+                          Sell
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === 'history' && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
+            {currentUser.history.length === 0 ? (
+              <p className="text-slate-400 text-center py-8">No transactions yet</p>
+            ) : (
+              <div className="space-y-2">
+                {[...currentUser.history].reverse().map((tx, i) => (
+                  <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+                    <div>
+                      <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                        {tx.type}
+                      </span>
+                      <span className="mx-2">•</span>
+                      <span className="font-semibold">{tx.symbol}</span>
+                      <span className="text-slate-400 ml-2">x{tx.amount}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
+                      <p className="text-xs text-slate-400">
+                        {new Date(tx.time).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
