@@ -116,23 +116,26 @@ export default function InvestorsGame() {
   // Check for credentials
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
-  // Load user session
+  // Load user session on mount
   useEffect(() => {
-    const loadSession = () => {
+    const loadSession = async () => {
       const session = localStorage.getItem('investors-session');
-      if (session) {
+      if (session && hasCredentials) {
         setUsername(session);
+        try {
+          const user = await supabase.getUser(session);
+          if (user) {
+            setCurrentUser(user);
+          } else {
+            localStorage.removeItem('investors-session');
+          }
+        } catch (err) {
+          localStorage.removeItem('investors-session');
+        }
       }
     };
     loadSession();
   }, []);
-
-  // Auto-login if session exists
-  useEffect(() => {
-    if (username && !currentUser && hasCredentials) {
-      handleLogin();
-    }
-  }, [username]);
 
   // Stock price updates
   useEffect(() => {
