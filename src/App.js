@@ -99,6 +99,21 @@ const supabase = {
     }
     const data = await response.json();
     return data[0];
+  },
+
+  async getLeaderboard() {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=username,balance,portfolio`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data;
   }
 };
 
@@ -115,9 +130,45 @@ export default function InvestorsGame() {
   const [view, setView] = useState('market');
   const [sortBy, setSortBy] = useState('symbol');
   const [filterSector, setFilterSector] = useState('all');
+  const [leaderboard, setLeaderboard] = useState([]);
 
   // Check for credentials
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+
+  // Load leaderboard when viewing leaderboard page
+  useEffect(() => {
+    if (view === 'leaderboard' && hasCredentials) {
+      loadLeaderboard();
+    }
+  }, [view]);
+
+  const loadLeaderboard = async () => {
+    try {
+      const allUsers = await supabase.getLeaderboard();
+      
+      // Calculate net worth for each user with current stock prices
+      const usersWithNetWorth = allUsers.map(user => {
+        const portfolioValue = Object.entries(user.portfolio || {}).reduce((sum, [stockId, amount]) => {
+          const stock = stocks.find(s => s.id === parseInt(stockId));
+          return sum + (stock ? stock.price * amount : 0);
+        }, 0);
+        
+        return {
+          username: user.username,
+          balance: user.balance,
+          portfolioValue,
+          netWorth: user.balance + portfolioValue
+        };
+      });
+      
+      // Sort by net worth descending
+      usersWithNetWorth.sort((a, b) => b.netWorth - a.netWorth);
+      
+      setLeaderboard(usersWithNetWorth);
+    } catch (err) {
+      console.error('Failed to load leaderboard:', err);
+    }
+  };
 
   // Load user session on mount
   useEffect(() => {
@@ -438,6 +489,14 @@ export default function InvestorsGame() {
             >
               History
             </button>
+            <button
+              onClick={() => setView('leaderboard')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'leaderboard' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Leaderboard
+            </button>
           </div>
         </div>
       </div>
@@ -672,6 +731,62 @@ export default function InvestorsGame() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === 'leaderboard' && (
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Leaderboard</h2>
+              <button
+                onClick={loadLeaderboard}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-sm"
+              >
+                Refresh
+              </button>
+            </div>
+            {leaderboard.length === 0 ? (
+              <p className="text-slate-400 text-center py-8">Loading leaderboard...</p>
+            ) : (
+              <div className="space-y-2">
+                {leaderboard.map((user, index) => {
+                  const isCurrentUser = user.username === currentUser.username;
+                  const rankColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
+                  const rankColor = index < 3 ? rankColors[index] : 'text-slate-400';
+                  
+                  return (
+                    <div
+                      key={user.username}
+                      className={`rounded-lg p-4 flex justify-between items-center ${
+                        isCurrentUser ? 'bg-blue-900/50 border-2 border-blue-500' : 'bg-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className={`text-2xl font-bold ${rankColor} w-8`}>
+                          #{index + 1}
+                        </span>
+                        <div>
+                          <h3 className={`text-lg font-bold ${isCurrentUser ? 'text-blue-300' : 'text-white'}`}>
+                            {user.username}
+                            {isCurrentUser && <span className="ml-2 text-sm text-blue-400">(You)</span>}
+                          </h3>
+                          <div className="flex gap-4 text-sm text-slate-400">
+                            <span>Cash: Ⓕ {user.balance.toFixed(2)}</span>
+                            <span>Portfolio: Ⓕ {user.portfolioValue.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-yellow-400">
+                          Ⓕ {user.netWorth.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-slate-400">Total Net Worth</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
