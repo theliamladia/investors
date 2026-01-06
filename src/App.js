@@ -742,7 +742,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
               )}
             </div>
 {/* Trading Panel */}
-<div className="space-y-4 sticky top-6">
+<div className="space-y-4 self-start sticky top-6">
   {liveSelectedStock ? (
     <>
       <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
