@@ -871,24 +871,46 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
     ) : (
       <>
         <div className="space-y-2 mb-4">
-          {[...currentUser.history].reverse().slice((historyPage - 1) * 10, historyPage * 10).map((tx, i) => (
-            <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
-              <div>
-                <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
-                  {tx.type}
-                </span>
-                <span className="mx-2">•</span>
-                <span className="font-semibold">{tx.symbol}</span>
-                <span className="text-slate-400 ml-2">x{tx.amount}</span>
-              </div>
-              <div className="text-right">
-                <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
-                <p className="text-xs text-slate-400">
-                  {new Date(tx.time).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))}
+{[...currentUser.history].reverse().slice((historyPage - 1) * 10, historyPage * 10).map((tx, i) => {
+  // Calculate realized P&L for sells
+  let realizedPnL = null;
+  if (tx.type === 'SELL') {
+    // Find the average buy price for this stock from previous transactions
+    const previousTxs = currentUser.history.slice(0, currentUser.history.length - i);
+    const buys = previousTxs.filter(t => t.symbol === tx.symbol && t.type === 'BUY');
+    
+    if (buys.length > 0) {
+      const totalBuyValue = buys.reduce((sum, t) => sum + (t.price * t.amount), 0);
+      const totalBuyAmount = buys.reduce((sum, t) => sum + t.amount, 0);
+      const avgBuyPrice = totalBuyValue / totalBuyAmount;
+      realizedPnL = (tx.price - avgBuyPrice) * tx.amount;
+    }
+  }
+  
+  return (
+    <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+      <div>
+        <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+          {tx.type}
+        </span>
+        <span className="mx-2">•</span>
+        <span className="font-semibold">{tx.symbol}</span>
+        <span className="text-slate-400 ml-2">x{tx.amount}</span>
+        {realizedPnL !== null && (
+          <span className={`ml-2 text-sm font-semibold ${realizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            ({realizedPnL >= 0 ? '+' : ''}Ⓕ {realizedPnL.toFixed(2)})
+          </span>
+        )}
+      </div>
+      <div className="text-right">
+        <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
+        <p className="text-xs text-slate-400">
+          {new Date(tx.time).toLocaleString()}
+        </p>
+      </div>
+    </div>
+  );
+})}
         </div>
         
         {/* Pagination */}
