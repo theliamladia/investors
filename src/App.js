@@ -526,7 +526,7 @@ export default function InvestorsGame() {
       if (sortBy === 'change') return (b.change || 0) - (a.change || 0);
       return 0;
     });
-
+const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStock.id) : null;
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
@@ -678,74 +678,76 @@ export default function InvestorsGame() {
                 </div>
               )}
             </div>
-
-            {/* Trading Panel */}
-            <div className="space-y-4">
-              {selectedStock ? (
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                  <h2 className="text-2xl font-bold mb-2">{selectedStock.symbol}</h2>
-                  <p className="text-slate-400 mb-4">{selectedStock.name}</p>
-                  <div className="text-3xl font-bold text-blue-400 mb-2">
-                    Ⓕ {selectedStock.price.toFixed(2)}
-                  </div>
-                  <p className="text-sm text-slate-400 mb-4">
-                    Volatility: {selectedStock.volatility.toFixed(1)}% | Sector: {selectedStock.sector}
-                  </p>
-                  
-                  <div className="h-48 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={selectedStock.history.map((price, i) => ({ price, i }))}>
-                        <XAxis dataKey="i" hide />
-                        <YAxis domain={['auto', 'auto']} hide />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                          formatter={(value) => [`Ⓕ ${value.toFixed(2)}`, 'Price']}
-                        />
-                        <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm text-slate-400 mb-2">Amount</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={tradeAmount}
-                        onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={() => buyStock(selectedStock)}
-                        disabled={currentUser.balance < selectedStock.price * tradeAmount}
-                        className="bg-green-600 hover:bg-green-700 disableContinue9:06 PM:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
->
-Buy
-</button>
-<button
-onClick={() => sellStock(selectedStock)}
-disabled={(currentUser.portfolio[selectedStock.id] || 0) < tradeAmount}
-className="bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
->
-Sell
-</button>
-</div>
-                <p className="text-xs text-slate-400 text-center">
-                  Cost: Ⓕ {(selectedStock.price * tradeAmount).toFixed(2)} | 
-                  Owned: {currentUser.portfolio[selectedStock.id] || 0}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 text-center text-slate-400">
-              Select a stock to trade
-            </div>
-          )}
+{/* Trading Panel */}
+<div className="space-y-4">
+  {liveSelectedStock ? (
+    <>
+      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <h2 className="text-2xl font-bold mb-2">{liveSelectedStock.symbol}</h2>
+        <p className="text-slate-400 mb-4">{liveSelectedStock.name}</p>
+        <div className="text-3xl font-bold text-blue-400 mb-2">
+          Ⓕ {liveSelectedStock.price.toFixed(2)}
         </div>
+        <p className="text-sm text-slate-400 mb-4">
+          Volatility: {liveSelectedStock.volatility.toFixed(1)}% | Sector: {liveSelectedStock.sector}
+        </p>
+        
+        <div className="h-48 mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={liveSelectedStock.history.map((price, i) => ({ price, i }))}>
+              <XAxis dataKey="i" hide />
+              <YAxis domain={['auto', 'auto']} hide />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                formatter={(value) => [`Ⓕ ${value.toFixed(2)}`, 'Price']}
+              />
+              <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Amount</label>
+            <input
+              type="number"
+              min="1"
+              value={tradeAmount}
+              onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
+              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => buyStock(liveSelectedStock)}
+              disabled={currentUser.balance < liveSelectedStock.price * tradeAmount}
+              className="bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+            >
+              Buy
+            </button>
+            <button
+              onClick={() => sellStock(liveSelectedStock)}
+              disabled={(currentUser.portfolio[liveSelectedStock.id] || 0) < tradeAmount}
+              className="bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+            >
+              Sell
+            </button>
+          </div>
+
+          <p className="text-xs text-slate-400 text-center">
+            Cost: Ⓕ {(liveSelectedStock.price * tradeAmount).toFixed(2)} | 
+            Owned: {currentUser.portfolio[liveSelectedStock.id] || 0}
+          </p>
+        </div>
+      </div>
+    </>
+  ) : (
+    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 text-center text-slate-400">
+      Select a stock to trade
+    </div>
+  )}
+</div>
       </div>
     )}
 
