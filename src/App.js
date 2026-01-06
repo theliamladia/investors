@@ -180,6 +180,7 @@ export default function InvestorsGame() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [isMarketMaker, setIsMarketMaker] = useState(false);
   const [stocksLoaded, setStocksLoaded] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
 
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
@@ -810,35 +811,58 @@ Sell
       </div>
     )}
 
-    {view === 'history' && (
-      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-        <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
-        {currentUser.history.length === 0 ? (
-          <p className="text-slate-400 text-center py-8">No transactions yet</p>
-        ) : (
-          <div className="space-y-2">
-            {[...currentUser.history].reverse().map((tx, i) => (
-              <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
-                <div>
-                  <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
-                    {tx.type}
-                  </span>
-                  <span className="mx-2">•</span>
-                  <span className="font-semibold">{tx.symbol}</span>
-                  <span className="text-slate-400 ml-2">x{tx.amount}</span>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
-                  <p className="text-xs text-slate-400">
-                    {new Date(tx.time).toLocaleString()}
-                  </p>
-                </div>
+ {view === 'history' && (
+  <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+    <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
+    {currentUser.history.length === 0 ? (
+      <p className="text-slate-400 text-center py-8">No transactions yet</p>
+    ) : (
+      <>
+        <div className="space-y-2 mb-4">
+          {[...currentUser.history].reverse().slice((historyPage - 1) * 10, historyPage * 10).map((tx, i) => (
+            <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+              <div>
+                <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                  {tx.type}
+                </span>
+                <span className="mx-2">•</span>
+                <span className="font-semibold">{tx.symbol}</span>
+                <span className="text-slate-400 ml-2">x{tx.amount}</span>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="text-right">
+                <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
+                <p className="text-xs text-slate-400">
+                  {new Date(tx.time).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Pagination */}
+        <div className="flex justify-between items-center">
+          <button
+            onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+            disabled={historyPage === 1}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition"
+          >
+            Previous
+          </button>
+          <span className="text-slate-400">
+            Page {historyPage} of {Math.ceil(currentUser.history.length / 10)}
+          </span>
+          <button
+            onClick={() => setHistoryPage(Math.min(Math.ceil(currentUser.history.length / 10), historyPage + 1))}
+            disabled={historyPage >= Math.ceil(currentUser.history.length / 10)}
+            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition"
+          >
+            Next
+          </button>
+        </div>
+      </>
     )}
+  </div>
+)}
 
     {view === 'leaderboard' && (
       <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
