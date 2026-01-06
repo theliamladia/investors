@@ -192,22 +192,23 @@ export default function InvestorsGame() {
         const existingStocks = await supabase.getStocks();
         
         if (existingStocks.length === 0) {
-          const initialStocks = generateStocks().map(stock => ({
-            id: stock.id,
-            symbol: stock.symbol,
-            name: stock.name,
-            sector: stock.sector,
-            price: stock.price,
-            volatility: stock.volatility
-          }));
-          
-          await supabase.initializeStocks(initialStocks);
-          const newStocks = await supabase.getStocks();
-          setStocks(newStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
-          setIsMarketMaker(true);
-        } else {
-          setStocks(existingStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
-        }
+  const initialStocks = generateStocks().map(stock => ({
+    id: stock.id,
+    symbol: stock.symbol,
+    name: stock.name,
+    sector: stock.sector,
+    price: stock.price,
+    volatility: stock.volatility
+  }));
+  
+  await supabase.initializeStocks(initialStocks);
+  const newStocks = await supabase.getStocks();
+  setStocks(newStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
+  setIsMarketMaker(true);
+} else {
+  setStocks(existingStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
+  setIsMarketMaker(true); // <-- ADD THIS LINE
+}
         
         setStocksLoaded(true);
       } catch (err) {
