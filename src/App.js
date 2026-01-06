@@ -462,7 +462,7 @@ const toggleWatchlist = (stockId) => {
       { name: 'Silver 2', threshold: 5000, color: 'text-slate-300', bgColor: 'bg-slate-500' },
       { name: 'Silver 3', threshold: 4000, color: 'text-slate-400', bgColor: 'bg-slate-500' },
       { name: 'Bronze 1', threshold: 3000, color: 'text-amber-700', bgColor: 'bg-amber-600' },
-      { name: 'Bronze 2', threshold: 2500, color: 'text-amber-700', bgColor: 'bg-amber-600' },
+      { name: 'Bronze 2', threshold: 2000, color: 'text-amber-700', bgColor: 'bg-amber-600' },
       { name: 'Bronze 3', threshold: 1500, color: 'text-amber-800', bgColor: 'bg-amber-700' },
       { name: 'Tin', threshold: 0, color: 'text-slate-500', bgColor: 'bg-slate-600' }
     ];
