@@ -1,226 +1,291 @@
-Overview
-##INVESTORS is a real-time multiplayer stock trading simulation game where players compete to build the highest net worth through strategic buying and selling of virtual stocks. Built with React and Supabase, the game features live price updates, persistent user accounts, and competitive leaderboards.
+# INVESTORS
 
-Core Mechanics
-Currency
+A real-time multiplayer stock trading simulation game where players compete to build the highest net worth through strategic buying and selling of virtual stocks.
 
-Floydbucks (Ⓕ) - The in-game currency
-New accounts start with 100 Floydbucks
+![INVESTORS Game](https://img.shields.io/badge/status-active-success.svg)
+![React](https://img.shields.io/badge/React-18.x-61dafb.svg)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-Stock Market
+---
 
-50 stocks across 8 sectors: Tech, Energy, Finance, Healthcare, Retail, Manufacturing, Media, Transport, Food
-Prices update in real-time (every 1-2 seconds)
-Each stock has a unique volatility rating (0.5% - 5%) that determines price movement intensity
-Prices move randomly based on volatility, simulating real market fluctuations
+## 📋 Table of Contents
 
-Market Maker System
+- [Overview](#overview)
+- [Core Mechanics](#core-mechanics)
+- [Features](#features)
+- [Technical Architecture](#technical-architecture)
+- [Game Flow](#game-flow)
+- [Key Formulas](#key-formulas)
+- [Installation](#installation)
+- [Database Setup](#database-setup)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Security Notes](#security-notes)
+- [Future Enhancements](#future-enhancements)
+- [Contributing](#contributing)
+- [License](#license)
 
-One user becomes the "market maker" and their client updates stock prices
-All other users fetch these prices every 2 seconds
-Ensures synchronized pricing across all players
+---
 
+## 🎯 Overview
 
-User Features
-1. Authentication
+**INVESTORS** is a real-time multiplayer stock trading simulation built with React and Supabase. Players start with 100 Floydbucks and compete to achieve the highest net worth by trading 50 virtual stocks across 8 different sectors. Stock prices update in real-time with realistic volatility-based movements, creating an engaging and competitive trading environment.
 
-Username & password-based login
-Account data stored in Supabase (PostgreSQL)
-Session persistence via localStorage
+### Currency
+- **Floydbucks (Ⓕ)** - In-game currency
+- New accounts start with **100 Floydbucks**
 
-2. Trading
+### Key Stats
+- **50 stocks** across 8 sectors
+- Real-time price updates (1-2 second intervals)
+- Persistent user accounts
+- Global competitive leaderboard
+- Portfolio tracking with P&L calculations
 
-Buy stocks with available cash balance
-Sell individual shares or Sell All at once
-Real-time cost calculation
-Transaction history with timestamps
+---
 
-3. Portfolio Management
+## 🎮 Core Mechanics
 
+### Stock Market
+
+#### Sectors
+The game features **50 stocks** distributed across **8 sectors**:
+- 🖥️ **Tech** - Technology companies
+- ⚡ **Energy** - Energy and utilities
+- 💼 **Finance** - Financial services
+- 🏥 **Healthcare** - Medical and pharmaceutical
+- 🛍️ **Retail** - Consumer retail
+- 🏭 **Manufacturing** - Industrial manufacturing
+- 📺 **Media** - Entertainment and media
+- 🚚 **Transport** - Transportation and logistics
+- 🍔 **Food** - Food and beverage
+
+#### Price Movement
+- Each stock has a unique **volatility rating** (0.5% - 5%)
+- Prices update every **1-2 seconds**
+- Higher volatility = larger price swings
+- Prices move randomly based on: `(Random × Volatility × Current Price)`
+- Minimum price floor of Ⓕ1.00
+
+#### Market Maker System
+- One connected user becomes the "market maker"
+- Market maker's client generates price updates (1-second interval)
+- All other users fetch updated prices (2-second interval)
+- Ensures synchronized pricing across all players
+
+---
+
+## ✨ Features
+
+### 🔐 Authentication
+- Username & password-based login
+- Sign up for new accounts
+- Persistent sessions via localStorage
+- Account data stored in Supabase PostgreSQL
+
+### 💹 Trading
+- **Buy** stocks with available cash balance
+- **Sell** individual shares or **Sell All** at once
+- Real-time cost calculation and balance validation
+- Instant transaction execution
+- Transaction confirmation
+
+### 📊 Portfolio Management
 View all owned stocks with:
+- Current total value
+- Quantity owned
+- Price per share
+- 24-hour change percentage (green/red indicators)
+- Quick actions: "Buy More" or "Sell All"
 
-Current value
-Quantity owned
-Price per share
-24-hour change percentage
+### 📌 Watchlist
+- Pin favorite stocks for quick access
+- Visual pin icon (turns green when active)
+- Filter entire market view to show only watchlisted stocks
+- Toggle watchlist on/off with one click
+- Watchlist persists via localStorage
 
+### 📜 Transaction History
+- Chronological record of all trades (buy/sell)
+- **24-hour P&L tracker** displayed at the top
+- **Realized P&L** shown for each sell transaction
+  - Calculated using average cost basis
+  - Shows actual profit/loss in green/red
+- Pagination: 10 transactions per page
+- Timestamps for each transaction
 
-Quick actions: Buy More or Sell All
+### 🏆 Leaderboard
+- Global ranking by **Total Net Worth**
+- Net Worth = Cash Balance + Portfolio Value
+- Top 3 players highlighted:
+  - 🥇 Gold (1st place)
+  - 🥈 Silver (2nd place)
+  - 🥉 Bronze (3rd place)
+- Current user highlighted in blue with "(You)" indicator
+- Manual refresh button
+- Shows detailed breakdown for each player:
+  - Cash balance
+  - Portfolio value
+  - Total net worth
 
-4. Watchlist
+### 📈 Real-time Charts
+- Interactive price history charts (Recharts)
+- 50-point historical data per stock
+- Hover tooltips showing exact prices
+- Visual representation of price trends
 
-Pin favorite stocks for quick access
-Visual pin icon (green when active)
-Filter market view to show only watchlisted stocks
-Watchlist persists via localStorage
+---
 
-5. Transaction History
+## 🏗️ Technical Architecture
 
-Chronological record of all trades
-24-hour P&L (Profit & Loss) tracker
-Realized P&L shown for each sell transaction
-Pagination (10 transactions per page)
-Average cost basis calculation
+### FrontendReact 18.x
+├── React Hooks (useState, useEffect)
+├── Recharts (price charts)
+├── Lucide React (icons)
+└── Tailwind CSS 3.x (styling)
 
-6. Leaderboard
+### BackendSupabase
+├── PostgreSQL Database
+│   ├── users table
+│   └── stocks table
+└── REST API
+├── CRUD operations
+└── Real-time data sync
 
-Global ranking by Total Net Worth (Cash + Portfolio Value)
-Top 3 highlighted with gold/silver/bronze colors
-Current user highlighted in blue
-Manual refresh option
-Shows breakdown: Cash Balance + Portfolio Value
+### Data Persistence
 
+| Data Type | Storage Method | Scope |
+|-----------|---------------|-------|
+| User accounts | Supabase PostgreSQL | Global (all users) |
+| Stock prices | Supabase PostgreSQL | Global (synchronized) |
+| Session data | localStorage | Per-browser |
+| Watchlist | localStorage | Per-browser |
 
-Technical Architecture
-Frontend
+### Database Schema
 
-React - UI framework
-Recharts - Real-time price charts
-Tailwind CSS - Styling
-Lucide React - Icons
+#### `users` Table
+sqlid    BIGSERIAL PRIMARY KEY
+username    TEXT UNIQUE NOT NULL
+password    TEXT NOT NULL
+balance     FLOAT8 DEFAULT 100
+portfolio   JSONB DEFAULT '{}'
+history     JSONB DEFAULT '[]'
+created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 
-Backend
+**Portfolio Structure (JSONB)**:
+json{
+"0": 5,    // Stock ID 0: 5 shares
+"12": 10,  // Stock ID 12: 10 shares
+"23": 3    // Stock ID 23: 3 shares
+}
 
-Supabase (PostgreSQL) - Database
+**History Structure (JSONB)**:
+json[
+{
+"type": "BUY",
+"symbol": "TECH",
+"amount": 5,
+"price": 150.50,
+"time": "2026-01-06T12:34:56.789Z"
+}
+]
 
-users table: username, password, balance, portfolio (JSONB), history (JSONB)
-stocks table: id, symbol, name, sector, price, volatility
+#### `stocks` Table
+sqlid       BIGSERIAL PRIMARY KEY
+symbol      TEXT NOT NULL
+name        TEXT NOT NULL
+sector      TEXT NOT NULL
+price       FLOAT8 NOT NULL
+volatility  FLOAT8 NOT NULL
 
+---
 
-REST API - Supabase endpoints for CRUD operations
+## 🎯 Game Flow
 
-Data Persistence
+### New Player Journey
+mermaidgraph LR
+A[Sign Up] --> B[Receive 100Ⓕ]
+B --> C[Browse Stocks]
+C --> D[Research & Analyze]
+D --> E[Execute Trades]
+E --> F[Build Portfolio]
+F --> G[Climb Leaderboard]
 
-User accounts - Supabase database
-Stock prices - Supabase database (synchronized)
-Session data - localStorage (auto-login)
-Watchlist - localStorage (per-user)
+1. **Create Account** - Username & password
+2. **Receive Starting Capital** - 100 Floydbucks
+3. **Browse Market** - View 50 stocks across 8 sectors
+4. **Research Stocks** - Check charts, volatility, current price
+5. **Execute Trades** - Buy stocks with available cash
+6. **Manage Portfolio** - Monitor holdings and P&L
+7. **Compete** - Climb the leaderboard
 
+### Active Trading LoopMonitor Prices → Identify Opportunities → Execute Trade → Update Portfolio → Repeat
 
-Game Flow
-New Player Journey
+**Strategy Considerations:**
+- Buy low, sell high
+- High volatility = high risk/reward
+- Diversify across sectors
+- Time entries and exits
+- Monitor 24h P&L for performance
 
-Create account with username/password
-Receive 100 Floydbucks starting capital
-Browse 50 stocks across 8 sectors
-Research stocks: view charts, volatility, sector
-Execute trades (buy/sell)
-Build portfolio and climb leaderboard
+### Competitive Element
+- Players compete for highest **Net Worth**
+- Leaderboard updates with live portfolio values
+- Risk management crucial for success
+- Strategic decisions:
+  - Which sectors to focus on
+  - When to take profits
+  - When to cut losses
+  - Portfolio diversification
 
-Active Trading Loop
+---
 
-Monitor real-time price changes
-Identify opportunities (low prices, high volatility)
-Buy stocks with available cash
-Hold until price appreciates
-Sell for profit (or cut losses)
-Reinvest gains to compound wealth
+## 📐 Key Formulas
 
-Competitive Element
+### Net Worth Calculation
+javascriptNet Worth = Cash Balance + Portfolio ValuePortfolio Value = Σ (Stock Price × Shares Owned)
 
-Players compete for highest net worth
-Leaderboard updates with live portfolio values
-Risk vs. reward: high volatility = higher gains/losses
-Strategic decisions: which sectors to focus on, when to buy/sell
+**Example:**Cash: Ⓕ50.00
+Holdings:
 
+TECH: 5 shares @ Ⓕ100 = Ⓕ500
+ENER: 10 shares @ Ⓕ20 = Ⓕ200
+Portfolio Value = Ⓕ700
+Net Worth = Ⓕ50 + Ⓕ700 = Ⓕ750
 
-Key Formulas
-Net Worth
-Net Worth = Cash Balance + Portfolio Value
-Portfolio Value = Σ (Stock Price × Shares Owned)
-Stock Price Movement
-Price Change = (Random(-0.5 to 0.5) × 2 × Volatility% × Current Price)
+### Stock Price Movement
+javascript Price Change = (Random(-0.5 to 0.5) × 2 × Volatility% × Current Price)
 New Price = Max(1, Current Price + Price Change)
-24-Hour P&L
-24h P&L = Total Sold (last 24h) - Total Bought (last 24h)
-Realized P&L (Per Trade)
-Average Buy Price = Total Cost Basis / Total Shares Owned
+
+**Example (5% volatility stock at Ⓕ100):**Random = 0.3 (between -0.5 and 0.5)
+Change = (0.3 × 2 × 0.05 × 100) = Ⓕ3.00
+New Price = Ⓕ100 + Ⓕ3.00 = Ⓕ103.00
+
+### 24-Hour P&L
+javascript 24h P&L = Total Sold (last 24h) - Total Bought (last 24h)
+
+**Example:**Bought in last 24h:
+
+10 shares @ Ⓕ50 = Ⓕ500
+Sold in last 24h:
+
+5 shares @ Ⓕ60 = Ⓕ300
+24h P&L = Ⓕ300 - Ⓕ500 = -Ⓕ200 (loss)
+
+### Realized P&L (Per Trade)
+javascript Average Buy Price = Total Cost Basis / Total Shares Owned
 Realized P&L = (Sell Price - Average Buy Price) × Amount Sold
 
-Features Summary
-FeatureDescriptionReal-time PricesStocks update every 1-2 seconds50 StocksDiversified across 8 sectorsPersistent AccountsData saved to SupabaseLive TradingInstant buy/sell executionPrice Charts50-point historical dataWatchlistPin favorites for quick accessPortfolio TrackingCurrent holdings with P&LTransaction HistoryFull trade log with realized gains24h P&LShort-term performance metricGlobal LeaderboardRanked by net worthMulti-user SyncAll players see same prices
+**Example:**Previous Buys:
 
-Security Considerations
-⚠️ Current Implementation (Demo/Educational)
+5 shares @ Ⓕ100 = Ⓕ500
+5 shares @ Ⓕ120 = Ⓕ600
+Total Cost = Ⓕ1,100
+Total Shares = 10
+Average Buy Price = Ⓕ110Current Sell:
 
-Passwords stored in plain text (NOT production-ready)
-No input sanitization
-Public API keys exposed in client code
-No rate limiting on trades
+5 shares @ Ⓕ150
+Realized P&L = (Ⓕ150 - Ⓕ110) × 5 = Ⓕ200 profit
 
-✅ Production Recommendations
-
-Hash passwords with bcrypt/argon2
-Implement JWT authentication
-Add server-side validation
-Rate limit API requests
-Use environment variables for secrets
-Add CAPTCHA for signup
-Implement trade cooldowns to prevent spam
-
-
-Future Enhancements
-Potential Features
-
-Stock splits & dividends
-Margin trading (borrow to buy)
-Short selling (bet on price drops)
-Limit orders (auto-buy/sell at target price)
-News events affecting stock prices
-Stock categories (growth vs. value)
-Achievement system
-Friend system & private leagues
-Historical price charts (weekly/monthly)
-Mobile-responsive design improvements
-
-Technical Improvements
-
-WebSocket for real-time price updates (eliminate polling)
-Server-side price generation (remove market maker client)
-Redis caching for faster reads
-Database indexing for performance
-Automated backups
-Analytics dashboard
-
-
-Deployment
-Current Stack:
-
-Frontend: Vercel/GitHub Pages
-Database: Supabase (cloud-hosted)
-DNS: Custom domain via Vercel
-
-Requirements:
-
-Node.js 16+
-Supabase account (free tier)
-Git for version control
-
-
-Educational Value
-Learning Concepts:
-
-Stock market basics (buying, selling, portfolio management)
-Risk management (volatility, diversification)
-Financial metrics (P&L, net worth, cost basis)
-Market timing strategies
-Competitive resource allocation
-
-Technical Skills:
-
-React state management
-Real-time data synchronization
-REST API integration
-Database design (JSONB for flexibility)
-Authentication flows
-Responsive UI/UX design
-
-
-Conclusion
-INVESTORS provides an engaging, risk-free environment to learn stock trading fundamentals while competing with friends. The real-time price simulation creates urgency and excitement, while the leaderboard drives competition. With persistent accounts and comprehensive tracking features, players can develop and refine trading strategies over time.
-Target Audience: Beginners learning finance, students, casual gamers, anyone interested in stock market simulation
-Play Time: Continuous (prices update 24/7, play anytime)
-Skill Ceiling: Medium (pattern recognition, timing, risk management)
-
-Built with React, Supabase, and Tailwind CSS
-Version 1.0 - January 2026
+---
