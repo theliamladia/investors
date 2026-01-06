@@ -453,7 +453,28 @@ const toggleWatchlist = (stockId) => {
       setTradeAmount(1);
     }
   };
+  const getRank = (netWorth) => {
+    const ranks = [
+      { name: 'Gold 1', threshold: 10500, color: 'text-yellow-300', bgColor: 'bg-yellow-600' },
+      { name: 'Gold 2', threshold: 9000, color: 'text-yellow-300', bgColor: 'bg-yellow-600' },
+      { name: 'Gold 3', threshold: 7500, color: 'text-yellow-400', bgColor: 'bg-yellow-600' },
+      { name: 'Silver 1', threshold: 6000, color: 'text-slate-300', bgColor: 'bg-slate-500' },
+      { name: 'Silver 2', threshold: 5000, color: 'text-slate-300', bgColor: 'bg-slate-500' },
+      { name: 'Silver 3', threshold: 4000, color: 'text-slate-400', bgColor: 'bg-slate-500' },
+      { name: 'Bronze 1', threshold: 3000, color: 'text-amber-700', bgColor: 'bg-amber-600' },
+      { name: 'Bronze 2', threshold: 2500, color: 'text-amber-700', bgColor: 'bg-amber-600' },
+      { name: 'Bronze 3', threshold: 1500, color: 'text-amber-800', bgColor: 'bg-amber-700' },
+      { name: 'Tin', threshold: 0, color: 'text-slate-500', bgColor: 'bg-slate-600' }
+    ];
 
+    for (const rank of ranks) {
+      if (netWorth >= rank.threshold) {
+        return rank;
+      }
+    }
+
+    return ranks[ranks.length - 1];
+  };
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
@@ -566,12 +587,15 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                 Ⓕ {portfolioValue.toFixed(2)}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Total Net Worth</p>
-              <p className="text-xl font-bold text-yellow-400">
-                Ⓕ {totalValue.toFixed(2)}
-              </p>
-            </div>
+       <div className="text-right">
+  <p className="text-sm text-slate-400">Total Net Worth</p>
+  <p className="text-xl font-bold text-yellow-400">
+    Ⓕ {totalValue.toFixed(2)}
+  </p>
+  <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold ${getRank(totalValue).bgColor} ${getRank(totalValue).color}`}>
+    {getRank(totalValue).name}
+  </div>
+</div>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
@@ -987,15 +1011,20 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       #{index + 1}
                     </span>
                     <div>
-                      <h3 className={`text-lg font-bold ${isCurrentUser ? 'text-blue-300' : 'text-white'}`}>
-                        {user.username}
-                        {isCurrentUser && <span className="ml-2 text-sm text-blue-400">(You)</span>}
-                      </h3>
-                      <div className="flex gap-4 text-sm text-slate-400">
-                        <span>Cash: Ⓕ {user.balance.toFixed(2)}</span>
-                        <span>Portfolio: Ⓕ {user.portfolioValue.toFixed(2)}</span>
-                      </div>
-                    </div>
+  <div className="flex items-center gap-2">
+    <h3 className={`text-lg font-bold ${isCurrentUser ? 'text-blue-300' : 'text-white'}`}>
+      {user.username}
+      {isCurrentUser && <span className="ml-2 text-sm text-blue-400">(You)</span>}
+    </h3>
+    <span className={`px-2 py-1 rounded text-xs font-bold ${getRank(user.netWorth).bgColor} ${getRank(user.netWorth).color}`}>
+      {getRank(user.netWorth).name}
+    </span>
+  </div>
+  <div className="flex gap-4 text-sm text-slate-400">
+    <span>Cash: Ⓕ {user.balance.toFixed(2)}</span>
+    <span>Portfolio: Ⓕ {user.portfolioValue.toFixed(2)}</span>
+  </div>
+</div>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-yellow-400">
