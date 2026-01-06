@@ -436,27 +436,6 @@ const toggleWatchlist = (stockId) => {
       const newPortfolio = { ...currentUser.portfolio };
       newPortfolio[stock.id] = owned - tradeAmount;
       if (newPortfolio[stock.id] === 0) delete newPortfolio[stock.id];
-    const calculate24hPnL = () => {
-  const now = new Date();
-  const yesterday = new Date(now - 24 * 60 * 60 * 1000);
-  
-  const recentTransactions = currentUser.history.filter(tx => 
-    new Date(tx.time) >= yesterday
-  );
-  
-  let totalBought = 0;
-  let totalSold = 0;
-  
-  recentTransactions.forEach(tx => {
-    if (tx.type === 'BUY') {
-      totalBought += tx.price * tx.amount;
-    } else if (tx.type === 'SELL') {
-      totalSold += tx.price * tx.amount;
-    }
-  });
-  
-  return totalSold - totalBought;
-};
       const newHistory = [...currentUser.history, {
         type: 'SELL',
         symbol: stock.symbol,
@@ -884,19 +863,9 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
       </div>
     )}
 
-{view === 'history' && (
+ {view === 'history' && (
   <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-    <div className="flex justify-between items-center mb-6">
-      <h2 className="text-2xl font-bold">Transaction History</h2>
-      <div className="text-right">
-        <p className="text-sm text-slate-400">24h P&L</p>
-        <p className={`text-2xl font-bold ${
-          calculate24hPnL() >= 0 ? 'text-green-400' : 'text-red-400'
-        }`}>
-          {calculate24hPnL() >= 0 ? '+' : ''}Ⓕ {calculate24hPnL().toFixed(2)}
-        </p>
-      </div>
-    </div>
+    <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
     {currentUser.history.length === 0 ? (
       <p className="text-slate-400 text-center py-8">No transactions yet</p>
     ) : (
