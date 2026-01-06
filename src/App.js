@@ -871,24 +871,41 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
     ) : (
       <>
         <div className="space-y-2 mb-4">
-{[...currentUser.history].reverse().slice((historyPage - 1) * 10, historyPage * 10).map((tx, i) => {
+{[...currentUser.history].reverse().slice((historyPage - 1) * 10, historyPage * 10).map((tx, reversedIndex) => {
   // Calculate realized P&L for sells
   let realizedPnL = null;
   if (tx.type === 'SELL') {
-    // Find the average buy price for this stock from previous transactions
-    const previousTxs = currentUser.history.slice(0, currentUser.history.length - i);
-    const buys = previousTxs.filter(t => t.symbol === tx.symbol && t.type === 'BUY');
+    // Get the original index in the non-reversed array
+    const originalIndex = currentUser.history.length - 1 - ((historyPage - 1) * 10 + reversedIndex);
     
-    if (buys.length > 0) {
-      const totalBuyValue = buys.reduce((sum, t) => sum + (t.price * t.amount), 0);
-      const totalBuyAmount = buys.reduce((sum, t) => sum + t.amount, 0);
-      const avgBuyPrice = totalBuyValue / totalBuyAmount;
-      realizedPnL = (tx.price - avgBuyPrice) * tx.amount;
-    }
+    // Get all transactions up to this sell
+    const previousTxs = currentUser.history.slice(0, originalIndex);
+    
+    // Calculate running position for this stock
+    const stockTxs = previousTxs.filter(t => t.symbol === tx.symbol);
+    
+    let totalCost = 0;
+    let totalShares = 0;
+    
+    stockTxs.forEach(t => {
+      if (t.type === 'BUY') {
+        totalCost += t.price * t.amount;
+        totalShares += t.amount;
+      } else if (t.type === 'SELL') {
+        // Reduce shares proportionally
+        const avgCost = totalShares > 0 ? totalCost / totalShares : 0;
+        totalCost -= avgCost * t.amount;
+        totalShares -= t.amount;
+      }
+    });
+    
+    // Calculate average cost
+    const avgBuyPrice = totalShares > 0 ? totalCost / totalShares : 0;
+    realizedPnL = (tx.price - avgBuyPrice) * tx.amount;
   }
   
   return (
-    <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+    <div key={reversedIndex} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
       <div>
         <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
           {tx.type}
@@ -896,7 +913,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         <span className="mx-2">•</span>
         <span className="font-semibold">{tx.symbol}</span>
         <span className="text-slate-400 ml-2">x{tx.amount}</span>
-        {realizedPnL !== null && (
+        {realizedPnL !== null && !isNaN(realizedPnL) && isFinite(realizedPnL) && (
           <span className={`ml-2 text-sm font-semibold ${realizedPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             ({realizedPnL >= 0 ? '+' : ''}Ⓕ {realizedPnL.toFixed(2)})
           </span>
