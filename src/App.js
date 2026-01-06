@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, Pin } from 'lucide-react';
 
 // Supabase credentials
 const SUPABASE_URL = 'https://npurrvorjoxjxieyzyjr.supabase.co';
@@ -181,7 +181,7 @@ export default function InvestorsGame() {
   const [isMarketMaker, setIsMarketMaker] = useState(false);
   const [stocksLoaded, setStocksLoaded] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
-
+  const [watchlist, setWatchlist] = useState([]);
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
   // Initialize stocks from Supabase or create them
@@ -320,6 +320,12 @@ export default function InvestorsGame() {
         } catch (err) {
           localStorage.removeItem('investors-session');
         }
+         }
+      
+      // Load watchlist from localStorage
+      const savedWatchlist = localStorage.getItem('investors-watchlist');
+      if (savedWatchlist) {
+        setWatchlist(JSON.parse(savedWatchlist));
       }
     };
     loadSession();
@@ -379,7 +385,14 @@ export default function InvestorsGame() {
     setPassword('');
     localStorage.removeItem('investors-session');
   };
-
+const toggleWatchlist = (stockId) => {
+  const newWatchlist = watchlist.includes(stockId)
+    ? watchlist.filter(id => id !== stockId)
+    : [...watchlist, stockId];
+  
+  setWatchlist(newWatchlist);
+  localStorage.setItem('investors-watchlist', JSON.stringify(newWatchlist));
+};
   const saveUser = async (userData) => {
     try {
       const updated = await supabase.updateUser(currentUser.username, userData);
@@ -518,14 +531,19 @@ export default function InvestorsGame() {
 
   const totalValue = currentUser.balance + portfolioValue;
 
-  const filteredStocks = stocks
-    .filter(s => filterSector === 'all' || s.sector === filterSector)
-    .sort((a, b) => {
-      if (sortBy === 'symbol') return a.symbol.localeCompare(b.symbol);
-      if (sortBy === 'price') return b.price - a.price;
-      if (sortBy === 'change') return (b.change || 0) - (a.change || 0);
-      return 0;
-    });
+const filteredStocks = stocks
+  .filter(s => {
+    if (filterSector === 'watchlist') {
+      return watchlist.includes(s.id);
+    }
+    return filterSector === 'all' || s.sector === filterSector;
+  })
+  .sort((a, b) => {
+    if (sortBy === 'symbol') return a.symbol.localeCompare(b.symbol);
+    if (sortBy === 'price') return b.price - a.price;
+    if (sortBy === 'change') return (b.change || 0) - (a.change || 0);
+    return 0;
+  });
 const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStock.id) : null;
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -612,11 +630,21 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             {/* Stock List */}
             <div className="col-span-2 space-y-4">
               <div className="flex gap-4 mb-4">
-                <select
-                  value={filterSector}
-                  onChange={(e) => setFilterSector(e.target.value)}
-                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                >
+  <button
+    onClick={() => setFilterSector('watchlist')}
+    className={`px-4 py-2 rounded-lg font-semibold transition ${
+      filterSector === 'watchlist' 
+        ? 'bg-blue-600 text-white' 
+        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+    }`}
+  >
+    Watchlist ({watchlist.length})
+  </button>
+  <select
+    value={filterSector === 'watchlist' ? 'all' : filterSector}
+    onChange={(e) => setFilterSector(e.target.value)}
+    className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
+  >
                   <option value="all">All Sectors</option>
                   {Object.keys(SECTORS).map(sector => (
                     <option key={sector} value={sector}>{sector.toUpperCase()}</option>
@@ -654,6 +682,18 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                             <div className="flex items-center gap-3">
                               <h3 className="text-lg font-bold">{stock.symbol}</h3>
                               <span className="text-xs text-slate-400 uppercase">{stock.sector}</span>
+                              <button
+  onClick={(e) => {
+    e.stopPropagation();
+    toggleWatchlist(stock.id);
+  }}
+  className="ml-2"
+>
+  <Pin 
+    size={16} 
+    className={watchlist.includes(stock.id) ? 'fill-green-500 text-green-500' : 'text-slate-400'} 
+  />
+</button>
                               {owned > 0 && (
                                 <span className="text-xs bg-blue-600 px-2 py-1 rounded">
                                   Own: {owned}
