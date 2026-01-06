@@ -783,25 +783,36 @@ Sell
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedStock(stock);
-                        setView('market');
-                      }}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition text-sm"
-                    >
-                      Buy More
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedStock(stock);
-                        setTradeAmount(amount);
-                        sellStock(stock);
-                      }}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
-                    >
-                      Sell All ({amount})
-                    </button>
+              <button
+  onClick={async () => {
+    setSelectedStock(stock);
+    setTradeAmount(amount);
+    
+    // Manually sell all shares directly
+    const revenue = stock.price * amount;
+    const newPortfolio = { ...currentUser.portfolio };
+    delete newPortfolio[stock.id];
+    
+    const newHistory = [...currentUser.history, {
+      type: 'SELL',
+      symbol: stock.symbol,
+      amount: amount,
+      price: stock.price,
+      time: new Date().toISOString()
+    }];
+
+    await saveUser({
+      balance: currentUser.balance + revenue,
+      portfolio: newPortfolio,
+      history: newHistory
+    });
+    
+    setTradeAmount(1);
+  }}
+  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
+>
+  Sell All ({amount})
+</button>
                   </div>
                 </div>
               );
