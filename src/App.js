@@ -631,7 +631,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             <div className="col-span-2 space-y-4">
               <div className="flex gap-4 mb-4">
   <button
-    onClick={() => setFilterSector('watchlist')}
+   onClick={() => setFilterSector(filterSector === 'watchlist' ? 'all' : 'watchlist')}
     className={`px-4 py-2 rounded-lg font-semibold transition ${
       filterSector === 'watchlist' 
         ? 'bg-blue-600 text-white' 
