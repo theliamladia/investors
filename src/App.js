@@ -16,6 +16,7 @@ const SECTORS = {
   media: ['StreamNet', 'NewsGlobal', 'GameStudios', 'SocialHub', 'ContentMax'],
   transport: ['AirlineGo', 'ShipCorp', 'RailExpress', 'CargoNet', 'LogiTrans'],
   food: ['FastBite', 'BrewCo', 'FoodChain', 'BeveragePlus']
+  squirt: ['FuckCorp', 'AssCo', 'RapeHub', 'KenyanAss','NiggaEdu']
 };
 
 const generateStocks = () => {
