@@ -114,6 +114,53 @@ const supabase = {
     }
     const data = await response.json();
     return data;
+  },
+
+  async getStocks() {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/stocks?select=*&order=id.asc`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data;
+  },
+
+  async updateStockPrices(stockUpdates) {
+    const promises = stockUpdates.map(({ id, price }) =>
+      fetch(`${SUPABASE_URL}/rest/v1/stocks?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ price })
+      })
+    );
+    await Promise.all(promises);
+  },
+
+  async initializeStocks(stocks) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/stocks`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(stocks)
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
   }
 };
 
@@ -124,20 +171,107 @@ export default function InvestorsGame() {
   const [isSignup, setIsSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [stocks, setStocks] = useState(generateStocks());
+  const [stocks, setStocks] = useState([]);
   const [selectedStock, setSelectedStock] = useState(null);
   const [tradeAmount, setTradeAmount] = useState(1);
   const [view, setView] = useState('market');
   const [sortBy, setSortBy] = useState('symbol');
   const [filterSector, setFilterSector] = useState('all');
   const [leaderboard, setLeaderboard] = useState([]);
+  const [isMarketMaker, setIsMarketMaker] = useState(false);
+  const [stocksLoaded, setStocksLoaded] = useState(false);
 
-  // Check for credentials
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+
+  // Initialize stocks from Supabase or create them
+  useEffect(() => {
+    const initStocks = async () => {
+      if (!hasCredentials) return;
+      
+      try {
+        const existingStocks = await supabase.getStocks();
+        
+        if (existingStocks.length === 0) {
+          const initialStocks = generateStocks().map(stock => ({
+            id: stock.id,
+            symbol: stock.symbol,
+            name: stock.name,
+            sector: stock.sector,
+            price: stock.price,
+            volatility: stock.volatility
+          }));
+          
+          await supabase.initializeStocks(initialStocks);
+          const newStocks = await supabase.getStocks();
+          setStocks(newStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
+          setIsMarketMaker(true);
+        } else {
+          setStocks(existingStocks.map(s => ({ ...s, history: [s.price], change: 0 })));
+        }
+        
+        setStocksLoaded(true);
+      } catch (err) {
+        console.error('Failed to load stocks:', err);
+      }
+    };
+    
+    initStocks();
+  }, [hasCredentials]);
+
+  // Fetch stock prices every 2 seconds (all users)
+  useEffect(() => {
+    if (!stocksLoaded || !hasCredentials) return;
+    
+    const fetchInterval = setInterval(async () => {
+      try {
+        const updatedStocks = await supabase.getStocks();
+        setStocks(prevStocks => 
+          updatedStocks.map((newStock, idx) => {
+            const prevStock = prevStocks[idx] || { history: [newStock.price] };
+            const newHistory = [...prevStock.history.slice(-50), newStock.price];
+            const change = prevStock.history[0] 
+              ? ((newStock.price - prevStock.history[0]) / prevStock.history[0]) * 100
+              : 0;
+            
+            return {
+              ...newStock,
+              history: newHistory,
+              change
+            };
+          })
+        );
+      } catch (err) {
+        console.error('Failed to fetch stock prices:', err);
+      }
+    }, 2000);
+    
+    return () => clearInterval(fetchInterval);
+  }, [stocksLoaded, hasCredentials]);
+
+  // Update stock prices (only market maker does this)
+  useEffect(() => {
+    if (!isMarketMaker || !stocksLoaded) return;
+    
+    const updateInterval = setInterval(async () => {
+      try {
+        const updates = stocks.map(stock => {
+          const change = (Math.random() - 0.5) * 2 * (stock.volatility / 100) * stock.price;
+          const newPrice = Math.max(1, stock.price + change);
+          return { id: stock.id, price: newPrice };
+        });
+        
+        await supabase.updateStockPrices(updates);
+      } catch (err) {
+        console.error('Failed to update stock prices:', err);
+      }
+    }, 1000);
+    
+    return () => clearInterval(updateInterval);
+  }, [isMarketMaker, stocksLoaded, stocks]);
 
   // Load leaderboard when viewing leaderboard page
   useEffect(() => {
-    if (view === 'leaderboard' && hasCredentials) {
+    if (view === 'leaderboard' && hasCredentials && currentUser) {
       loadLeaderboard();
     }
   }, [view]);
@@ -146,7 +280,6 @@ export default function InvestorsGame() {
     try {
       const allUsers = await supabase.getLeaderboard();
       
-      // Calculate net worth for each user with current stock prices
       const usersWithNetWorth = allUsers.map(user => {
         const portfolioValue = Object.entries(user.portfolio || {}).reduce((sum, [stockId, amount]) => {
           const stock = stocks.find(s => s.id === parseInt(stockId));
@@ -161,7 +294,6 @@ export default function InvestorsGame() {
         };
       });
       
-      // Sort by net worth descending
       usersWithNetWorth.sort((a, b) => b.netWorth - a.netWorth);
       
       setLeaderboard(usersWithNetWorth);
@@ -189,29 +321,7 @@ export default function InvestorsGame() {
       }
     };
     loadSession();
-  }, []);
-
-  // Stock price updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStocks(prevStocks => 
-        prevStocks.map(stock => {
-          const change = (Math.random() - 0.5) * 2 * (stock.volatility / 100) * stock.price;
-          const newPrice = Math.max(1, stock.price + change);
-          const newHistory = [...stock.history.slice(-50), newPrice];
-          
-          return {
-            ...stock,
-            price: newPrice,
-            history: newHistory,
-            change: ((newPrice - stock.history[0]) / stock.history[0]) * 100
-          };
-        })
-      );
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [hasCredentials]);
 
   const handleLogin = async () => {
     if (!username.trim()) {
@@ -233,32 +343,23 @@ export default function InvestorsGame() {
     setError('');
 
     try {
-      console.log('Attempting to fetch user:', username);
-      console.log('URL:', `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(username)}&select=*`);
-      
       let user = await supabase.getUser(username);
       
       if (user) {
-        // User exists - check password
         if (user.password !== password) {
           setError('Incorrect password');
           setLoading(false);
           return;
         }
-        console.log('Login successful:', user);
         setCurrentUser(user);
         localStorage.setItem('investors-session', username);
       } else {
-        // User doesn't exist
         if (!isSignup) {
           setError('User not found. Switch to Sign Up to create an account.');
           setLoading(false);
           return;
         }
-        // Create new user
-        console.log('User not found, creating new user');
         user = await supabase.createUser(username, password);
-        console.log('Signup successful:', user);
         setCurrentUser(user);
         localStorage.setItem('investors-session', username);
       }
@@ -273,6 +374,7 @@ export default function InvestorsGame() {
   const handleLogout = () => {
     setCurrentUser(null);
     setUsername('');
+    setPassword('');
     localStorage.removeItem('investors-session');
   };
 
@@ -529,269 +631,270 @@ export default function InvestorsGame() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                {filteredStocks.map(stock => {
-                  const change = stock.change || 0;
-                  const owned = currentUser.portfolio[stock.id] || 0;
-                  
-                  return (
-                    <div
-                      key={stock.id}
-                      onClick={() => setSelectedStock(stock)}
-                      className={`bg-slate-800 rounded-lg p-4 cursor-pointer transition hover:bg-slate-750 border ${
-                        selectedStock?.id === stock.id ? 'border-blue-400' : 'border-slate-700'
-                      }`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-bold">{stock.symbol}</h3>
-                            <span className="text-xs text-slate-400 uppercase">{stock.sector}</span>
-                            {owned > 0 && (
-                              <span className="text-xs bg-blue-600 px-2 py-1 rounded">
-                                Own: {owned}
-                              </span>
-                            )}
+              {stocks.length === 0 ? (
+                <p className="text-slate-400 text-center py-8">Loading stocks...</p>
+              ) : (
+                <div className="space-y-2">
+                  {filteredStocks.map(stock => {
+                    const change = stock.change || 0;
+                    const owned = currentUser.portfolio[stock.id] || 0;
+                    
+                    return (
+                      <div
+                        key={stock.id}
+                        onClick={() => setSelectedStock(stock)}
+                        className={`bg-slate-800 rounded-lg p-4 cursor-pointer transition hover:bg-slate-750 border ${
+                          selectedStock?.id === stock.id ? 'border-blue-400' : 'border-slate-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="text-lg font-bold">{stock.symbol}</h3>
+                              <span className="text-xs text-slate-400 uppercase">{stock.sector}</span>
+                              {owned > 0 && (
+                                <span className="text-xs bg-blue-600 px-2 py-1 rounded">
+                                  Own: {owned}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-slate-400">{stock.name}</p>
                           </div>
-                          <p className="text-sm text-slate-400">{stock.name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold">Ⓕ {stock.price.toFixed(2)}</p>
-                          <p className={`text-sm flex items-center justify-end gap-1 ${
-                            change >= 0 ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                          </p>
+                          <div className="text-right">
+                            <p className="text-xl font-bold">Ⓕ {stock.price.toFixed(2)}</p>
+                            <p className={`text-sm flex items-center justify-end gap-1 ${
+                              change >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Trading Panel */}
             <div className="space-y-4">
               {selectedStock ? (
-                <>
-                  <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-                    <h2 className="text-2xl font-bold mb-2">{selectedStock.symbol}</h2>
-                    <p className="text-slate-400 mb-4">{selectedStock.name}</p>
-                    <div className="text-3xl font-bold text-blue-400 mb-2">
-                      Ⓕ {selectedStock.price.toFixed(2)}
-                    </div>
-                    <p className="text-sm text-slate-400 mb-4">
-                      Volatility: {selectedStock.volatility.toFixed(1)}% | Sector: {selectedStock.sector}
-                    </p>
-                    
-                    <div className="h-48 mb-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={selectedStock.history.map((price, i) => ({ price, i }))}>
-                          <XAxis dataKey="i" hide />
-                          <YAxis domain={['auto', 'auto']} hide />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
-                            formatter={(value) => [`Ⓕ ${value.toFixed(2)}`, 'Price']}
-                          />
-                          <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-sm text-slate-400 mb-2">Amount</label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={tradeAmount}
-                          onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          onClick={() => buyStock(selectedStock)}
-                          disabled={currentUser.balance < selectedStock.price * tradeAmount}
-                          className="bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
-                        >
-                          Buy
-                        </button>
-                        <button
-                          onClick={() => sellStock(selectedStock)}
-                          disabled={(currentUser.portfolio[selectedStock.id] || 0) < tradeAmount}
-                          className="bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
-                        >
-                          Sell
-                        </button>
-                      </div>
-
-                      <p className="text-xs text-slate-400 text-center">
-                        Cost: Ⓕ {(selectedStock.price * tradeAmount).toFixed(2)} | 
-                        Owned: {currentUser.portfolio[selectedStock.id] || 0}
-                      </p>
-                    </div>
+                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+                  <h2 className="text-2xl font-bold mb-2">{selectedStock.symbol}</h2>
+                  <p className="text-slate-400 mb-4">{selectedStock.name}</p>
+                  <div className="text-3xl font-bold text-blue-400 mb-2">
+                    Ⓕ {selectedStock.price.toFixed(2)}
                   </div>
-                </>
-              ) : (
-                <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 text-center text-slate-400">
-                  Select a stock to trade
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {view === 'portfolio' && (
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <h2 className="text-2xl font-bold mb-6">Your Portfolio</h2>
-            {Object.keys(currentUser.portfolio).length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No stocks owned yet</p>
-            ) : (
-              <div className="space-y-3">
-                {Object.entries(currentUser.portfolio).map(([stockId, amount]) => {
-                  const stock = stocks.find(s => s.id === parseInt(stockId));
-                  if (!stock) return null;
+                  <p className="text-sm text-slate-400 mb-4">
+                    Volatility: {selectedStock.volatility.toFixed(1)}% | Sector: {selectedStock.sector}
+                  </p>
                   
-                  const value = stock.price * amount;
-                  const change = stock.change || 0;
-                  
-                  return (
-                    <div key={stockId} className="bg-slate-700 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="text-lg font-bold">{stock.symbol}</h3>
-                          <p className="text-sm text-slate-400">{stock.name}</p>
-                          <p className="text-sm text-slate-300 mt-1">{amount} shares owned</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-blue-400">Ⓕ {value.toFixed(2)}</p>
-                          <p className="text-sm text-slate-400">@ Ⓕ {stock.price.toFixed(2)}</p>
-                          <p className={`text-sm flex items-center justify-end gap-1 ${
-                            change >= 0 ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                            {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setSelectedStock(stock);
-                            setView('market');
-                          }}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition text-sm"
-                        >
-                          Buy More
-                        </button>
-                        <button
-  onClick={() => {
-    setSelectedStock(stock);
-    setTradeAmount(amount);  // <-- Use the amount variable, not 1
-    sellStock(stock);
-  }}
-  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
->
-  Sell All ({amount})
-</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                  <div className="h-48 mb-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={selectedStock.history.map((price, i) => ({ price, i }))}>
+                        <XAxis dataKey="i" hide />
+                        <YAxis domain={['auto', 'auto']} hide />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                          formatter={(value) => [`Ⓕ ${value.toFixed(2)}`, 'Price']}
+                        />
+                        <Line type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
 
-        {view === 'history' && (
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
-            {currentUser.history.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">No transactions yet</p>
-            ) : (
-              <div className="space-y-2">
-                {[...currentUser.history].reverse().map((tx, i) => (
-                  <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+                  <div className="space-y-3">
                     <div>
-                      <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
-                        {tx.type}
-                      </span>
-                      <span className="mx-2">•</span>
-                      <span className="font-semibold">{tx.symbol}</span>
-                      <span className="text-slate-400 ml-2">x{tx.amount}</span>
+                      <label className="block text-sm text-slate-400 mb-2">Amount</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={tradeAmount}
+                        onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => buyStock(selectedStock)}
+                        disabled={currentUser.balance < selectedStock.price * tradeAmount}
+                        className="bg-green-600 hover:bg-green-700 disableContinue9:06 PM:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+>
+Buy
+</button>
+<button
+onClick={() => sellStock(selectedStock)}
+disabled={(currentUser.portfolio[selectedStock.id] || 0) < tradeAmount}
+className="bg-red-600 hover:bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold py-3 rounded-lg transition"
+>
+Sell
+</button>
+</div>
+                <p className="text-xs text-slate-400 text-center">
+                  Cost: Ⓕ {(selectedStock.price * tradeAmount).toFixed(2)} | 
+                  Owned: {currentUser.portfolio[selectedStock.id] || 0}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 text-center text-slate-400">
+              Select a stock to trade
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {view === 'portfolio' && (
+      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <h2 className="text-2xl font-bold mb-6">Your Portfolio</h2>
+        {Object.keys(currentUser.portfolio).length === 0 ? (
+          <p className="text-slate-400 text-center py-8">No stocks owned yet</p>
+        ) : (
+          <div className="space-y-3">
+            {Object.entries(currentUser.portfolio).map(([stockId, amount]) => {
+              const stock = stocks.find(s => s.id === parseInt(stockId));
+              if (!stock) return null;
+              
+              const value = stock.price * amount;
+              const change = stock.change || 0;
+              
+              return (
+                <div key={stockId} className="bg-slate-700 rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold">{stock.symbol}</h3>
+                      <p className="text-sm text-slate-400">{stock.name}</p>
+                      <p className="text-sm text-slate-300 mt-1">{amount} shares owned</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(tx.time).toLocaleString()}
+                      <p className="text-xl font-bold text-blue-400">Ⓕ {value.toFixed(2)}</p>
+                      <p className="text-sm text-slate-400">@ Ⓕ {stock.price.toFixed(2)}</p>
+                      <p className={`text-sm flex items-center justify-end gap-1 ${
+                        change >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                        {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {view === 'leaderboard' && (
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Leaderboard</h2>
-              <button
-                onClick={loadLeaderboard}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-sm"
-              >
-                Refresh
-              </button>
-            </div>
-            {leaderboard.length === 0 ? (
-              <p className="text-slate-400 text-center py-8">Loading leaderboard...</p>
-            ) : (
-              <div className="space-y-2">
-                {leaderboard.map((user, index) => {
-                  const isCurrentUser = user.username === currentUser.username;
-                  const rankColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
-                  const rankColor = index < 3 ? rankColors[index] : 'text-slate-400';
-                  
-                  return (
-                    <div
-                      key={user.username}
-                      className={`rounded-lg p-4 flex justify-between items-center ${
-                        isCurrentUser ? 'bg-blue-900/50 border-2 border-blue-500' : 'bg-slate-700'
-                      }`}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedStock(stock);
+                        setView('market');
+                      }}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition text-sm"
                     >
-                      <div className="flex items-center gap-4">
-                        <span className={`text-2xl font-bold ${rankColor} w-8`}>
-                          #{index + 1}
-                        </span>
-                        <div>
-                          <h3 className={`text-lg font-bold ${isCurrentUser ? 'text-blue-300' : 'text-white'}`}>
-                            {user.username}
-                            {isCurrentUser && <span className="ml-2 text-sm text-blue-400">(You)</span>}
-                          </h3>
-                          <div className="flex gap-4 text-sm text-slate-400">
-                            <span>Cash: Ⓕ {user.balance.toFixed(2)}</span>
-                            <span>Portfolio: Ⓕ {user.portfolioValue.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-yellow-400">
-                          Ⓕ {user.netWorth.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-slate-400">Total Net Worth</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                      Buy More
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedStock(stock);
+                        setTradeAmount(amount);
+                        sellStock(stock);
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition text-sm"
+                    >
+                      Sell All ({amount})
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
-    </div>
-  );
+    )}
+
+    {view === 'history' && (
+      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <h2 className="text-2xl font-bold mb-6">Transaction History</h2>
+        {currentUser.history.length === 0 ? (
+          <p className="text-slate-400 text-center py-8">No transactions yet</p>
+        ) : (
+          <div className="space-y-2">
+            {[...currentUser.history].reverse().map((tx, i) => (
+              <div key={i} className="bg-slate-700 rounded-lg p-4 flex justify-between items-center">
+                <div>
+                  <span className={`font-bold ${tx.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                    {tx.type}
+                  </span>
+                  <span className="mx-2">•</span>
+                  <span className="font-semibold">{tx.symbol}</span>
+                  <span className="text-slate-400 ml-2">x{tx.amount}</span>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold">Ⓕ {tx.price.toFixed(2)}</p>
+                  <p className="text-xs text-slate-400">
+                    {new Date(tx.time).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+
+    {view === 'leaderboard' && (
+      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Leaderboard</h2>
+          <button
+            onClick={loadLeaderboard}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+        {leaderboard.length === 0 ? (
+          <p className="text-slate-400 text-center py-8">Loading leaderboard...</p>
+        ) : (
+          <div className="space-y-2">
+            {leaderboard.map((user, index) => {
+              const isCurrentUser = user.username === currentUser.username;
+              const rankColors = ['text-yellow-400', 'text-slate-300', 'text-amber-600'];
+              const rankColor = index < 3 ? rankColors[index] : 'text-slate-400';
+              
+              return (
+                <div
+                  key={user.username}
+                  className={`rounded-lg p-4 flex justify-between items-center ${
+                    isCurrentUser ? 'bg-blue-900/50 border-2 border-blue-500' : 'bg-slate-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className={`text-2xl font-bold ${rankColor} w-8`}>
+                      #{index + 1}
+                    </span>
+                    <div>
+                      <h3 className={`text-lg font-bold ${isCurrentUser ? 'text-blue-300' : 'text-white'}`}>
+                        {user.username}
+                        {isCurrentUser && <span className="ml-2 text-sm text-blue-400">(You)</span>}
+                      </h3>
+                      <div className="flex gap-4 text-sm text-slate-400">
+                        <span>Cash: Ⓕ {user.balance.toFixed(2)}</span>
+                        <span>Portfolio: Ⓕ {user.portfolioValue.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-yellow-400">
+                      Ⓕ {user.netWorth.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-400">Total Net Worth</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</div>
+);
 }
