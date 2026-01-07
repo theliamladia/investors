@@ -157,7 +157,83 @@ const supabase = {
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify(stocks)
+     async initializeStocks(stocks) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/stocks`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(stocks)
     });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+  },
+
+  async getMessages() {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=*&order=id.desc&limit=50`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    return data.reverse();
+  },
+
+  async sendMessage(username, message) {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        username,
+        message,
+        timestamp: new Date().toISOString()
+      })
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    return await response.json();
+  },
+
+  async cleanupOldMessages() {
+    const countResponse = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=id`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    const messages = await countResponse.json();
+    
+    if (messages.length > 50) {
+      const idsToDelete = messages.slice(0, messages.length - 50).map(m => m.id);
+      
+      for (const id of idsToDelete) {
+        await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          }
+        });
+      }
+    }
+  }
+};
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
@@ -182,6 +258,8 @@ export default function InvestorsGame() {
   const [stocksLoaded, setStocksLoaded] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [watchlist, setWatchlist] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
   // Initialize stocks from Supabase or create them
@@ -305,6 +383,7 @@ export default function InvestorsGame() {
   };
 
   // Load user session on mount
+  // Load user session on mount
   useEffect(() => {
     const loadSession = async () => {
       const session = localStorage.getItem('investors-session');
@@ -330,6 +409,25 @@ export default function InvestorsGame() {
     };
     loadSession();
   }, [hasCredentials]);
+
+  // Load and poll chat messages
+  useEffect(() => {
+    if (!currentUser || !hasCredentials) return;
+
+    const loadMessages = async () => {
+      try {
+        const messages = await supabase.getMessages();
+        setChatMessages(messages);
+      } catch (err) {
+        console.error('Failed to load chat messages:', err);
+      }
+    };
+
+    loadMessages();
+    const interval = setInterval(loadMessages, 2000);
+
+    return () => clearInterval(interval);
+  }, [currentUser, hasCredentials]);
 
   const handleLogin = async () => {
     if (!username.trim()) {
@@ -393,13 +491,29 @@ const toggleWatchlist = (stockId) => {
   setWatchlist(newWatchlist);
   localStorage.setItem('investors-watchlist', JSON.stringify(newWatchlist));
 };
-  const saveUser = async (userData) => {
+const saveUser = async (userData) => {
     try {
       const updated = await supabase.updateUser(currentUser.username, userData);
       setCurrentUser(updated);
     } catch (err) {
       console.error('Save failed:', err);
       setError('Failed to save data');
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    try {
+      await supabase.sendMessage(currentUser.username, chatInput.trim());
+      setChatInput('');
+      
+      await supabase.cleanupOldMessages();
+      
+      const messages = await supabase.getMessages();
+      setChatMessages(messages);
+    } catch (err) {
+      console.error('Failed to send message:', err);
     }
   };
 
@@ -678,7 +792,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             >
               History
             </button>
-            <button
+      <button
               onClick={() => setView('leaderboard')}
               className={`px-6 py-3 font-semibold transition ${
                 view === 'leaderboard' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
@@ -686,10 +800,22 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             >
               Leaderboard
             </button>
+            <button
+              onClick={() => setView('chat')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'chat' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              💬 Chat
+              {chatMessages.length > 0 && (
+                <span className="ml-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                  {chatMessages.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         {view === 'market' && (
@@ -1083,6 +1209,96 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         )}
       </div>
     )}
+    {view === 'leaderboard' && (
+      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+        {/* ... leaderboard content ... */}
+      </div>
+    )}
+
+    {view === 'chat' && (
+      <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col h-[600px]">
+        <div className="p-4 border-b border-slate-700">
+          <h2 className="text-2xl font-bold">💬 Global Chat</h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Last 50 messages • Updates every 2 seconds
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {chatMessages.length === 0 ? (
+            <div className="text-center text-slate-400 py-8">
+              <p className="text-4xl mb-2">💬</p>
+              <p>No messages yet. Be the first to chat!</p>
+            </div>
+          ) : (
+            chatMessages.map((msg, index) => {
+              const isCurrentUser = msg.username === currentUser.username;
+              const timeStr = new Date(msg.timestamp).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+              
+              return (
+                <div
+                  key={index}
+                  className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-lg p-3 ${
+                      isCurrentUser
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700 text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-sm">
+                        {msg.username}
+                        {isCurrentUser && ' (You)'}
+                      </span>
+                      <span className="text-xs opacity-70">{timeStr}</span>
+                    </div>
+                    <p className="text-sm break-words">{msg.message}</p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="p-4 border-t border-slate-700">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendChatMessage();
+                }
+              }}
+              placeholder="Type a message..."
+              maxLength={500}
+              className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+            />
+            <button
+              onClick={sendChatMessage}
+              disabled={!chatInput.trim()}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition"
+            >
+              Send
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            {chatInput.length}/500 characters
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+);
+}
   </div>
 </div>
 );
