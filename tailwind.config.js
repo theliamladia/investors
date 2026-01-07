@@ -5,15 +5,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'matrix': {
+        matrix: {
           green: '#00ff41',
-          'dark-green': '#003b00',
-          'darker-green': '#001a00',
-          black: '#0d0208',
+          'dark': '#003b00',
+          'darker': '#001a00',
+          'black': '#0a0e0a',
+          'red': '#ff0000',
         }
       },
       fontFamily: {
-        'matrix': ['DotGothic16', 'Courier New', 'monospace'],
+        matrix: ['DotGothic16', 'Courier New', 'monospace'],
+      },
+      letterSpacing: {
+        'matrix': '0.1em',
       }
     },
   },
