@@ -13,9 +13,9 @@ module.exports = {
           'red': '#ff0000',
         }
       },
-    fontFamily: {
-  matrix: ['VT323', 'Courier New', 'monospace'],
-}
+      fontFamily: {
+        matrix: ['VT323', 'Courier New', 'monospace'],
+      },
       letterSpacing: {
         'matrix': '0.1em',
       }
