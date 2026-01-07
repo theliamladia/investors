@@ -570,10 +570,16 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">INVESTORS</h1>
-            <p className="text-sm text-slate-400">Welcome, {currentUser.username}</p>
-          </div>
+         <div className="flex items-center gap-4">
+  <img 
+    src="https://media.discordapp.net/attachments/1300500479096393738/1458498553088573513/investorsfull.png?ex=695fdc20&is=695e8aa0&hm=e682ddab40ebf7f9819d9e17053ad693bb731ce983b640337ed314db963ba500&=&format=webp&quality=lossless" 
+    alt="INVESTORS"
+    className="h-12"
+  />
+  <div>
+    <p className="text-sm text-slate-400">Welcome, {currentUser.username}</p>
+  </div>
+</div>
           <div className="flex items-center gap-6">
             <div className="text-right">
               <p className="text-sm text-slate-400">Cash Balance</p>
