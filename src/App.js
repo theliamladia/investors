@@ -68,13 +68,14 @@ const supabase = {
         'Content-Type': 'application/json',
         'Prefer': 'return=representation'
       },
-      body: JSON.stringify({
-        username,
-        password,
-        balance: 100,
-        portfolio: {},
-        history: []
-      })
+    body: JSON.stringify({
+  username,
+  password,
+  balance: 100,
+  portfolio: {},
+  history: [],
+  inventory: []
+})
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -453,6 +454,21 @@ const toggleWatchlist = (stockId) => {
       setTradeAmount(1);
     }
   };
+  const addTestItem = async () => {
+  const testItem = {
+    id: Date.now(),
+    name: 'Crystal Ball',
+    type: 'Prediction Tool',
+    description: 'Reveals future price movements for 5 minutes',
+    effect: '+10% insight on stock trends',
+    duration: '5 minutes',
+    quantity: 1,
+    active: false
+  };
+
+  const newInventory = [...(currentUser.inventory || []), testItem];
+  await saveUser({ inventory: newInventory });
+};
   const getRank = (netWorth) => {
     const ranks = [
       { name: 'Gold 1', threshold: 10500, color: 'text-yellow-300', bgColor: 'bg-yellow-600' },
@@ -648,6 +664,14 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             >
               Leaderboard
             </button>
+            <button
+  onClick={() => setView('inventory')}
+  className={`px-6 py-3 font-semibold transition ${
+    view === 'inventory' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+  }`}
+>
+  Inventory
+</button>
           </div>
         </div>
       </div>
@@ -1045,6 +1069,48 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         )}
       </div>
     )}
+    {view === 'inventory' && (
+  <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+    <h2 className="text-2xl font-bold mb-6">Your Inventory</h2>
+    {!currentUser.inventory || currentUser.inventory.length === 0 ? (
+      <p className="text-slate-400 text-center py-8">No items in inventory</p>
+    ) : (
+      <div className="grid grid-cols-3 gap-4">
+        {currentUser.inventory.map((item, index) => (
+          <div key={index} className="bg-slate-700 rounded-lg p-4 border border-slate-600">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <h3 className="text-lg font-bold text-white">{item.name}</h3>
+                <p className="text-xs text-slate-400">{item.type}</p>
+              </div>
+              {item.quantity > 1 && (
+                <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded font-bold">
+                  x{item.quantity}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-slate-300 mb-3">{item.description}</p>
+            <div className="space-y-1 text-xs text-slate-400 mb-3">
+              {item.effect && <p>Effect: {item.effect}</p>}
+              {item.duration && <p>Duration: {item.duration}</p>}
+            </div>
+            <button
+              onClick={() => useItem(item.id)}
+              disabled={item.active}
+              className={`w-full py-2 rounded font-semibold transition ${
+                item.active 
+                  ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+              }`}
+            >
+              {item.active ? 'ACTIVE' : 'USE'}
+            </button>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+)}
   </div>
 </div>
 );
