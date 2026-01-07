@@ -124,7 +124,7 @@ const supabase = {
         'Content-Type': 'application/json'
       }
     });
-    if (!response.ok) {
+if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
     const data = await response.json();
@@ -144,7 +144,7 @@ const supabase = {
         body: JSON.stringify({ price })
       })
     );
-await Promise.all(promises);
+    await Promise.all(promises);
   },
 
   async initializeStocks(stocks) {
@@ -164,7 +164,7 @@ await Promise.all(promises);
   },
 
   async getMessages() {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=*&order=id.desc&limit=50`, {, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=*&order=id.desc&limit=50`, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
