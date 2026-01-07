@@ -333,9 +333,9 @@ export default function InvestorsGame() {
     return () => clearInterval(updateInterval);
   }, [isMarketMaker, stocksLoaded, stocks]);
 
-  // Load leaderboard when viewing leaderboard page
+// Load leaderboard when viewing leaderboard page
   useEffect(() => {
-    if (view === 'leaderboard' && hasCredentials && currentUser) {
+    if ((view === 'leaderboard' || view === 'chat') && hasCredentials && currentUser) {
       loadLeaderboard();
     }
   }, [view]);
@@ -1222,6 +1222,10 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                 minute: '2-digit'
               });
               
+              // Get user's rank from leaderboard
+              const userRank = leaderboard.find(u => u.username === msg.username);
+              const rank = userRank ? getRank(userRank.netWorth) : null;
+              
               return (
                 <div
                   key={index}
@@ -1239,6 +1243,11 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                         {msg.username}
                         {isCurrentUser && ' (You)'}
                       </span>
+                      {rank && (
+                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${rank.bgColor} ${rank.color}`}>
+                          [{rank.name}]
+                        </span>
+                      )}
                       <span className="text-xs opacity-70">{timeStr}</span>
                     </div>
                     <p className="text-sm break-words">{msg.message}</p>
@@ -1246,7 +1255,6 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                 </div>
               );
             })
-          )}
         </div>
 
         <div className="p-4 border-t border-slate-700">
