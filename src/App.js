@@ -1208,7 +1208,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+     <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {chatMessages.length === 0 ? (
             <div className="text-center text-slate-400 py-8">
               <p className="text-4xl mb-2">💬</p>
@@ -1255,8 +1255,8 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                 </div>
               );
             })
+          )}
         </div>
-
         <div className="p-4 border-t border-slate-700">
           <div className="flex gap-2">
             <input
