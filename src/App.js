@@ -109,7 +109,7 @@ const supabase = {
         'Content-Type': 'application/json'
       }
     });
-    if (!response.ok) {
+if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
     const data = await response.json();
@@ -124,7 +124,7 @@ const supabase = {
         'Content-Type': 'application/json'
       }
     });
-if (!response.ok) {
+    if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
     const data = await response.json();
@@ -224,12 +224,6 @@ if (!response.ok) {
     }
   }
 };
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-    }
-  }
-};
-
 export default function InvestorsGame() {
   const [currentUser, setCurrentUser] = useState(null);
   const [username, setUsername] = useState('');
