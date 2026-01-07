@@ -1283,7 +1283,4 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
 </div>
 );
 }
-  </div>
-</div>
-);
-}
+
