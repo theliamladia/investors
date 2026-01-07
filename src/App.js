@@ -566,85 +566,89 @@ const filteredStocks = stocks
   });
 const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStock.id) : null;
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <>
+      <div className="scanline"></div>
+      <div className="crt min-h-screen bg-matrix-black text-matrix-green">
       {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">INVESTORS</h1>
-            <p className="text-sm text-slate-400">Welcome, {currentUser.username}</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Cash Balance</p>
-              <p className="text-xl font-bold text-green-400">
-                Ⓕ {currentUser.balance.toFixed(2)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Portfolio Value</p>
-              <p className="text-xl font-bold text-blue-400">
-                Ⓕ {portfolioValue.toFixed(2)}
-              </p>
-            </div>
-       <div className="text-right">
-  <p className="text-sm text-slate-400">Total Net Worth</p>
-  <p className="text-xl font-bold text-yellow-400">
-    Ⓕ {totalValue.toFixed(2)}
-  </p>
-  <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold ${getRank(totalValue).bgColor} ${getRank(totalValue).color}`}>
-    {getRank(totalValue).name}
+<div className="bg-matrix-darker border-b-2 border-matrix-green p-4 shadow-[0_0_20px_rgba(0,255,65,0.3)]">
+  <div className="max-w-7xl mx-auto flex justify-between items-center">
+    <div>
+      <h1 className="text-3xl font-bold text-matrix-green tracking-matrix" style={{textShadow: '0 0 10px #00ff41'}}>
+        INVESTORS
+      </h1>
+      <p className="text-sm text-matrix-green opacity-70">OPERATOR: {currentUser.username}</p>
+    </div>
+    <div className="flex items-center gap-6">
+      <div className="text-right">
+        <p className="text-xs text-matrix-green opacity-70">CASH BALANCE</p>
+        <p className="text-xl font-bold text-matrix-green" style={{textShadow: '0 0 5px #00ff41'}}>
+          Ⓕ {currentUser.balance.toFixed(2)}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-matrix-green opacity-70">PORTFOLIO VALUE</p>
+        <p className="text-xl font-bold text-matrix-green" style={{textShadow: '0 0 5px #00ff41'}}>
+          Ⓕ {portfolioValue.toFixed(2)}
+        </p>
+      </div>
+      <div className="text-right">
+        <p className="text-xs text-matrix-green opacity-70">TOTAL NET WORTH</p>
+        <p className="text-xl font-bold text-matrix-green" style={{textShadow: '0 0 10px #00ff41'}}>
+          Ⓕ {totalValue.toFixed(2)}
+        </p>
+        <div className={`inline-block mt-1 px-3 py-1 rounded border ${getRank(totalValue).bgColor} ${getRank(totalValue).color}`} style={{borderColor: '#00ff41'}}>
+          {getRank(totalValue).name}
+        </div>
+      </div>
+      <button
+        onClick={handleLogout}
+        className="px-4 py-2 bg-matrix-dark border-2 border-matrix-green text-matrix-green rounded hover:bg-matrix-green hover:text-black transition"
+        style={{textShadow: '0 0 5px #00ff41'}}
+      >
+        LOGOUT
+      </button>
+    </div>
   </div>
 </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="bg-slate-800 border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setView('market')}
-              className={`px-6 py-3 font-semibold transition ${
-                view === 'market' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Market
-            </button>
-            <button
-              onClick={() => setView('portfolio')}
-              className={`px-6 py-3 font-semibold transition ${
-                view === 'portfolio' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Portfolio
-            </button>
-            <button
-              onClick={() => setView('history')}
-              className={`px-6 py-3 font-semibold transition ${
-                view === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              History
-            </button>
-            <button
-              onClick={() => setView('leaderboard')}
-              className={`px-6 py-3 font-semibold transition ${
-                view === 'leaderboard' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Leaderboard
-            </button>
-          </div>
-        </div>
-      </div>
+  {/* Navigation */}
+<div className="bg-slate-800 border-b border-slate-700">
+  <div className="max-w-7xl mx-auto px-4">
+    <div className="flex gap-4">
+      <button
+        onClick={() => setView('market')}
+        className={`px-6 py-3 font-semibold transition ${
+          view === 'market' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        Market
+      </button>
+      <button
+        onClick={() => setView('portfolio')}
+        className={`px-6 py-3 font-semibold transition ${
+          view === 'portfolio' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        Portfolio
+      </button>
+      <button
+        onClick={() => setView('history')}
+        className={`px-6 py-3 font-semibold transition ${
+          view === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        History
+      </button>
+      <button
+        onClick={() => setView('leaderboard')}
+        className={`px-6 py-3 font-semibold transition ${
+          view === 'leaderboard' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+        }`}
+      >
+        Leaderboard
+      </button>
+    </div>
+  </div>
+</div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
@@ -655,34 +659,37 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
               <div className="flex gap-4 mb-4">
   <button
    onClick={() => setFilterSector(filterSector === 'watchlist' ? 'all' : 'watchlist')}
-    className={`px-4 py-2 rounded-lg font-semibold transition ${
+    className={`px-4 py-2 rounded border-2 font-semibold transition tracking-wider ${
       filterSector === 'watchlist' 
-        ? 'bg-blue-600 text-white' 
-        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+        ? 'bg-matrix-green text-black border-matrix-green' 
+        : 'bg-matrix-darker text-matrix-green border-matrix-green hover:bg-matrix-dark'
     }`}
+    style={filterSector === 'watchlist' ? {} : {textShadow: '0 0 5px #00ff41'}}
   >
-    Watchlist ({watchlist.length})
+    WATCHLIST ({watchlist.length})
   </button>
   <select
     value={filterSector === 'watchlist' ? 'all' : filterSector}
     onChange={(e) => setFilterSector(e.target.value)}
-    className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
+    className="px-4 py-2 bg-matrix-darker border-2 border-matrix-green rounded text-matrix-green focus:outline-none focus:border-matrix-green tracking-wider"
+    style={{textShadow: '0 0 5px #00ff41'}}
   >
-                  <option value="all">All Sectors</option>
-                  {Object.keys(SECTORS).map(sector => (
-                    <option key={sector} value={sector}>{sector.toUpperCase()}</option>
-                  ))}
-                </select>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-400"
-                >
-                  <option value="symbol">Sort by Symbol</option>
-                  <option value="price">Sort by Price</option>
-                  <option value="change">Sort by Change</option>
-                </select>
-              </div>
+    <option value="all">ALL SECTORS</option>
+    {Object.keys(SECTORS).map(sector => (
+      <option key={sector} value={sector}>{sector.toUpperCase()}</option>
+    ))}
+  </select>
+  <select
+    value={sortBy}
+    onChange={(e) => setSortBy(e.target.value)}
+    className="px-4 py-2 bg-matrix-darker border-2 border-matrix-green rounded text-matrix-green focus:outline-none focus:border-matrix-green tracking-wider"
+    style={{textShadow: '0 0 5px #00ff41'}}
+  >
+    <option value="symbol">SORT BY SYMBOL</option>
+    <option value="price">SORT BY PRICE</option>
+    <option value="change">SORT BY CHANGE</option>
+  </select>
+</div>
 
               {stocks.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">Loading stocks...</p>
@@ -1037,9 +1044,11 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             })}
           </div>
         )}
+          </div>
+        )}
       </div>
-    )}
-  </div>
-</div>
-);
+    </div>
+    </div>
+  </>
+  );
 }
