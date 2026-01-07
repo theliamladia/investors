@@ -572,12 +572,12 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         <div className="max-w-7xl mx-auto flex justify-between items-center">
          <div className="flex items-center gap-4">
   <img 
-    src="https://media.discordapp.net/attachments/1300500479096393738/1458498553088573513/investorsfull.png?ex=695fdc20&is=695e8aa0&hm=e682ddab40ebf7f9819d9e17053ad693bb731ce983b640337ed314db963ba500&=&format=webp&quality=lossless" 
+    src="https://media.discordapp.net/attachments/1300500479096393738/1458499460970844416/investorswhite.png?ex=695fdcf9&is=695e8b79&hm=dc0d9f1e279a3c30e3c37cd9ae202481b8449ba57c0f2732a310ac815725f818&=&format=webp&quality=lossless" 
     alt="INVESTORS"
     className="h-12"
   />
   <div>
-    <p className="text-sm text-slate-400">Welcome, {currentUser.username}</p>
+    <p className="text-lg text-slate-400">Welcome, {currentUser.username}</p>
   </div>
 </div>
           <div className="flex items-center gap-6">
