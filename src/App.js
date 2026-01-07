@@ -570,45 +570,83 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-         <div className="flex items-center gap-4">
+<div className="flex items-center gap-4">
   <img 
-    src="https://media.discordapp.net/attachments/1300500479096393738/1458499460970844416/investorswhite.png?ex=695fdcf9&is=695e8b79&hm=dc0d9f1e279a3c30e3c37cd9ae202481b8449ba57c0f2732a310ac815725f818&=&format=webp&quality=lossless" 
+    src="https://media.discordapp.net/attachments/1300500479096393738/1458498553088573513/investorsfull.png?ex=695fdc20&is=695e8aa0&hm=e682ddab40ebf7f9819d9e17053ad693bb731ce983b640337ed314db963ba500&=&format=webp&quality=lossless" 
     alt="INVESTORS"
     className="h-12"
   />
-  <div>
-    <p className="text-lg text-slate-400">Welcome, {currentUser.username}</p>
-  </div>
-</div>
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Cash Balance</p>
-              <p className="text-xl font-bold text-green-400">
-                Ⓕ {currentUser.balance.toFixed(2)}
-              </p>
+  <div className="flex-1">
+    <div className="flex items-center gap-2 mb-2">
+      <p className="text-lg text-slate-400">Welcome, {currentUser.username}</p>
+      <span className={`px-2 py-1 rounded text-xs font-bold ${getRank(totalValue).bgColor} ${getRank(totalValue).color}`}>
+        [{getRank(totalValue).name}]
+      </span>
+    </div>
+    {(() => {
+      const currentRank = getRank(totalValue);
+      const allRanks = [
+        { name: 'Gold 1', threshold: 10500 },
+        { name: 'Gold 2', threshold: 9000 },
+        { name: 'Gold 3', threshold: 7500 },
+        { name: 'Silver 1', threshold: 6000 },
+        { name: 'Silver 2', threshold: 5000 },
+        { name: 'Silver 3', threshold: 4000 },
+        { name: 'Bronze 1', threshold: 3000 },
+        { name: 'Bronze 2', threshold: 2000 },
+        { name: 'Bronze 3', threshold: 1500 },
+        { name: 'Tin', threshold: 0 }
+      ];
+      const currentRankIndex = allRanks.findIndex(r => r.name === currentRank.name);
+      const nextRank = currentRankIndex > 0 ? allRanks[currentRankIndex - 1] : null;
+      
+      if (nextRank) {
+        const progress = ((totalValue - currentRank.threshold) / (nextRank.threshold - currentRank.threshold)) * 100;
+        const remaining = nextRank.threshold - totalValue;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-slate-700 rounded-full h-4 overflow-hidden border border-slate-600">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300" 
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              ></div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Portfolio Value</p>
-              <p className="text-xl font-bold text-blue-400">
-                Ⓕ {portfolioValue.toFixed(2)}
-              </p>
-            </div>
-       <div className="text-right">
-  <p className="text-sm text-slate-400">Total Net Worth</p>
-  <p className="text-xl font-bold text-yellow-400">
-    Ⓕ {totalValue.toFixed(2)}
-  </p>
-  <div className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold ${getRank(totalValue).bgColor} ${getRank(totalValue).color}`}>
-    {getRank(totalValue).name}
-  </div>
-</div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
-            >
-              Logout
-            </button>
+            <span className="text-xs text-slate-400 whitespace-nowrap">
+              Ⓕ {remaining.toFixed(2)} to {nextRank.name}
+            </span>
           </div>
+        );
+      }
+      return <p className="text-xs text-slate-400">MAX RANK ACHIEVED</p>;
+    })()}
+  </div>
+</div>
+<div className="flex items-center gap-6">
+  <div className="text-right">
+    <p className="text-sm text-slate-400">Cash Balance</p>
+    <p className="text-xl font-bold text-green-400">
+      Ⓕ {currentUser.balance.toFixed(2)}
+    </p>
+  </div>
+  <div className="text-right">
+    <p className="text-sm text-slate-400">Portfolio Value</p>
+    <p className="text-xl font-bold text-blue-400">
+      Ⓕ {portfolioValue.toFixed(2)}
+    </p>
+  </div>
+  <div className="text-right">
+    <p className="text-sm text-slate-400">Total Net Worth</p>
+    <p className="text-xl font-bold text-yellow-400">
+      Ⓕ {totalValue.toFixed(2)}
+    </p>
+  </div>
+  <button
+    onClick={handleLogout}
+    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
+  >
+    Logout
+  </button>
+</div>
         </div>
       </div>
 
