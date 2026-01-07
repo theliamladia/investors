@@ -144,20 +144,10 @@ const supabase = {
         body: JSON.stringify({ price })
       })
     );
-    await Promise.all(promises);
+await Promise.all(promises);
   },
 
   async initializeStocks(stocks) {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/stocks`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(stocks)
-     async initializeStocks(stocks) {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/stocks`, {
       method: 'POST',
       headers: {
@@ -174,7 +164,7 @@ const supabase = {
   },
 
   async getMessages() {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=*&order=id.desc&limit=50`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=*&order=id.desc&limit=50`, {, {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
