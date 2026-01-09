@@ -713,10 +713,6 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
           <span className="text-lg">🏆</span>
         </div>
       </div>
-
-      {/* Header */}
-      <div className="bg-slate-800 border-b border-slate-700 p-4">
-    
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
