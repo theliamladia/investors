@@ -1363,14 +1363,14 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             </div>
           </div>
 
-          {/* Rewards Section */}
+     {/* Rewards Section */}
           <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
             <h3 className="text-2xl font-bold mb-6 text-yellow-400">🎁 Rewards</h3>
             <p className="text-slate-300 mb-6">Rewards will be distributed after the tournament ends.</p>
             
             <div className="space-y-4">
               {/* 1st Place */}
-              <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900 rounded-lg p-5 border-2 border-purple-500 shadow-lg">
+              <div className="bg-slate-800 rounded-lg p-5 border-2 border-slate-600">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <span className="text-4xl">🥇</span>
@@ -1379,7 +1379,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <p className="text-slate-200 text-lg mt-1">Title & Trophy + 10,000 Ⓕ</p>
                     </div>
                   </div>
-                  <div className="bg-gradient-to-r from-purple-600 to-purple-800 px-4 py-2 rounded-lg border-2 border-purple-400">
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-800 px-4 py-2 rounded-lg border-2 border-purple-400 shadow-lg">
                     <span className="font-bold text-white text-lg">🏆 R0 1st</span>
                   </div>
                 </div>
@@ -1395,8 +1395,8 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <p className="text-slate-200 text-lg mt-1">Title & Trophy + 5,000 Ⓕ</p>
                     </div>
                   </div>
-                  <div className="bg-purple-700 px-4 py-2 rounded-lg border-2 border-purple-500">
-                    <span className="font-bold text-white text-lg">🏆 R0 2nd</span>
+                  <div className="bg-purple-900/60 px-4 py-2 rounded-lg border-2 border-purple-700/50">
+                    <span className="font-bold text-purple-300 text-lg">🏆 R0 2nd</span>
                   </div>
                 </div>
               </div>
@@ -1411,14 +1411,13 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <p className="text-slate-200 text-lg mt-1">Title & Trophy + 1,000 Ⓕ</p>
                     </div>
                   </div>
-                  <div className="bg-purple-700 px-4 py-2 rounded-lg border-2 border-purple-500">
-                    <span className="font-bold text-white text-lg">🏆 R0 3rd</span>
+                  <div className="bg-purple-900/60 px-4 py-2 rounded-lg border-2 border-purple-700/50">
+                    <span className="font-bold text-purple-300 text-lg">🏆 R0 3rd</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
           {/* How to Win */}
           <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
             <h3 className="text-2xl font-bold mb-4 text-green-400">💡 How to Win</h3>
