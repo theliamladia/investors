@@ -703,8 +703,6 @@ const filteredStocks = stocks
 const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStock.id) : null;
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-    return (
-    <div className="min-h-screen bg-slate-900 text-white">
       {/* Ranked Season Banner */}
       <div className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white py-2 px-4 text-center font-bold text-sm border-b-2 border-red-700 shadow-lg">
         <div className="flex items-center justify-center gap-3">
