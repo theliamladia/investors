@@ -845,6 +845,14 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setView('about')}
+              className={`px-6 py-3 font-semibold transition ${
+                view === 'about' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              🏆 ABOUT RANKED
+            </button>
           </div>
         </div>
       </div>
@@ -1299,9 +1307,125 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <span className="text-xs opacity-70">{timeStr}</span>
                     </div>
                     <p className="text-sm break-words">{msg.message}</p>
+       </div>
+      </div>
+    )}
+
+    {view === 'about' && (
+      <div className="bg-slate-800 rounded-lg p-8 border border-slate-700 max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-4xl font-bold mb-2 flex items-center justify-center gap-3">
+            <span>🏆</span>
+            <span>ABOUT RANKED</span>
+            <span>🏆</span>
+          </h2>
+          <p className="text-slate-400 text-lg">Season 0 Tournament Guide</p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Tournament Info */}
+          <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+            <h3 className="text-2xl font-bold mb-4 text-blue-400">📅 Tournament Schedule</h3>
+            <div className="space-y-2 text-lg">
+              <p><span className="font-bold text-green-400">START:</span> January 9, 2026</p>
+              <p><span className="font-bold text-red-400">END:</span> January 30, 2026</p>
+              <p className="text-slate-300 mt-4">
+                Compete against other players to climb the leaderboard and earn exclusive rewards!
+              </p>
+            </div>
+          </div>
+
+          {/* Rewards Section */}
+          <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+            <h3 className="text-2xl font-bold mb-6 text-yellow-400">🎁 Rewards</h3>
+            <p className="text-slate-300 mb-6">Rewards will be distributed after the tournament ends.</p>
+            
+            <div className="space-y-4">
+              {/* 1st Place */}
+              <div className="bg-gradient-to-r from-purple-900 via-purple-800 to-purple-900 rounded-lg p-5 border-2 border-purple-500 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🥇</span>
+                    <div>
+                      <h4 className="text-2xl font-bold text-yellow-300">1st Place</h4>
+                      <p className="text-slate-200 text-lg mt-1">Title & Trophy + 10,000 Ⓕ</p>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-purple-600 to-purple-800 px-4 py-2 rounded-lg border-2 border-purple-400">
+                    <span className="font-bold text-white text-lg">🏆 R0 1st</span>
                   </div>
                 </div>
-              );
+              </div>
+
+              {/* 2nd Place */}
+              <div className="bg-slate-800 rounded-lg p-5 border-2 border-slate-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🥈</span>
+                    <div>
+                      <h4 className="text-2xl font-bold text-slate-300">2nd Place</h4>
+                      <p className="text-slate-200 text-lg mt-1">Title & Trophy + 5,000 Ⓕ</p>
+                    </div>
+                  </div>
+                  <div className="bg-purple-700 px-4 py-2 rounded-lg border-2 border-purple-500">
+                    <span className="font-bold text-white text-lg">🏆 R0 2nd</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3rd Place */}
+              <div className="bg-slate-800 rounded-lg p-5 border-2 border-slate-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🥉</span>
+                    <div>
+                      <h4 className="text-2xl font-bold text-amber-700">3rd Place</h4>
+                      <p className="text-slate-200 text-lg mt-1">Title & Trophy + 1,000 Ⓕ</p>
+                    </div>
+                  </div>
+                  <div className="bg-purple-700 px-4 py-2 rounded-lg border-2 border-purple-500">
+                    <span className="font-bold text-white text-lg">🏆 R0 3rd</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* How to Win */}
+          <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
+            <h3 className="text-2xl font-bold mb-4 text-green-400">💡 How to Win</h3>
+            <ul className="space-y-3 text-lg text-slate-300">
+              <li className="flex items-start gap-3">
+                <span className="text-blue-400 font-bold">1.</span>
+                <span>Build your net worth by trading stocks strategically</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-400 font-bold">2.</span>
+                <span>Climb the leaderboard by having the highest total net worth</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-400 font-bold">3.</span>
+                <span>Net Worth = Cash Balance + Portfolio Value</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-blue-400 font-bold">4.</span>
+                <span>Top 3 players at the end of the tournament win exclusive rewards!</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Good Luck */}
+          <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 text-center border-2 border-blue-500">
+            <p className="text-2xl font-bold text-white mb-2">🎮 Good Luck, Traders! 🎮</p>
+            <p className="text-slate-200">May the best investor win!</p>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+);
+}
             })
           )}
         </div>
