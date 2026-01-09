@@ -244,6 +244,7 @@ export default function InvestorsGame() {
   const [watchlist, setWatchlist] = useState([]);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+    const [timeRemaining, setTimeRemaining] = useState('');
   const hasCredentials = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
   // Initialize stocks from Supabase or create them
@@ -424,6 +425,32 @@ export default function InvestorsGame() {
     return () => clearInterval(interval);
   }, [currentUser, hasCredentials]);
 
+// Countdown timer for ranked season
+  useEffect(() => {
+    const calculateTimeRemaining = () => {
+      const endDate = new Date('2026-01-30T23:59:59');
+      const now = new Date();
+      const diff = endDate - now;
+
+      if (diff <= 0) {
+        setTimeRemaining('SEASON ENDED');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeRemaining(`${days.toString().padStart(2, '0')}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    calculateTimeRemaining();
+    const interval = setInterval(calculateTimeRemaining, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+  
   const handleLogin = async () => {
     if (!username.trim()) {
       setError('Please enter a username');
@@ -676,6 +703,22 @@ const filteredStocks = stocks
 const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStock.id) : null;
   return (
     <div className="min-h-screen bg-slate-900 text-white">
+    return (
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Ranked Season Banner */}
+      <div className="bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white py-2 px-4 text-center font-bold text-sm border-b-2 border-red-700 shadow-lg">
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-lg">🏆</span>
+          <span>STARTED: S0 RANKED</span>
+          <span className="mx-2">•</span>
+          <span>ENDS IN: {timeRemaining || 'Loading...'}</span>
+          <span className="text-lg">🏆</span>
+        </div>
+      </div>
+
+      {/* Header */}
+      <div className="bg-slate-800 border-b border-slate-700 p-4">
+    
       {/* Header */}
       <div className="bg-slate-800 border-b border-slate-700 p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
