@@ -312,15 +312,27 @@ export default function InvestorsGame() {
     return () => clearInterval(fetchInterval);
   }, [stocksLoaded, hasCredentials]);
 
-  // Update stock prices (only market maker does this)
+// Update stock prices (only market maker does this)
   useEffect(() => {
     if (!isMarketMaker || !stocksLoaded) return;
     
     const updateInterval = setInterval(async () => {
       try {
         const updates = stocks.map(stock => {
-          const change = (Math.random() - 0.5) * 2 * (stock.volatility / 100) * stock.price;
-          const newPrice = Math.max(1, stock.price + change);
+          // Get initial price from history (fair value)
+          const fairValue = stock.history[0] || 100;
+          
+          // Mean reversion force - pull toward fair value
+          const meanReversionStrength = 0.02; // 2% pull per update
+          const drift = (fairValue - stock.price) * meanReversionStrength;
+          
+          // Random volatility component
+          const randomChange = (Math.random() - 0.5) * 2 * (stock.volatility / 100) * stock.price;
+          
+          // Combine drift + random
+          const totalChange = drift + randomChange;
+          const newPrice = Math.max(fairValue * 0.2, stock.price + totalChange); // Floor at 20% of fair value
+          
           return { id: stock.id, price: newPrice };
         });
         
@@ -332,7 +344,6 @@ export default function InvestorsGame() {
     
     return () => clearInterval(updateInterval);
   }, [isMarketMaker, stocksLoaded, stocks]);
-
 // Load leaderboard when viewing leaderboard page
   useEffect(() => {
     if ((view === 'leaderboard' || view === 'chat') && hasCredentials && currentUser) {
