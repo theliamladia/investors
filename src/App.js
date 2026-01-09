@@ -1447,7 +1447,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
             </ul>
           </div>
 
-          {/* Good Luck */}
+     {/* Good Luck */}
           <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 text-center border-2 border-blue-500">
             <p className="text-2xl font-bold text-white mb-2">🎮 Good Luck, Traders! 🎮</p>
             <p className="text-slate-200">May the best investor win!</p>
