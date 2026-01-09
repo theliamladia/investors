@@ -1249,11 +1249,6 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         )}
       </div>
     )}
-    {view === 'leaderboard' && (
-      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-        {/* ... leaderboard content ... */}
-      </div>
-    )}
 {view === 'chat' && (
       <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col h-[600px]">
         <div className="p-4 border-b border-slate-700">
@@ -1446,8 +1441,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
               </li>
             </ul>
           </div>
-
-     {/* Good Luck */}
+{/* Good Luck */}
           <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 text-center border-2 border-blue-500">
             <p className="text-2xl font-bold text-white mb-2">🎮 Good Luck, Traders! 🎮</p>
             <p className="text-slate-200">May the best investor win!</p>
@@ -1459,38 +1453,3 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
 </div>
 );
 }
-        <div className="p-4 border-t border-slate-700">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendChatMessage();
-                }
-              }}
-              placeholder="Type a message..."
-              maxLength={500}
-              className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
-            />
-            <button
-              onClick={sendChatMessage}
-              disabled={!chatInput.trim()}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition"
-            >
-              Send
-            </button>
-          </div>
-          <p className="text-xs text-slate-500 mt-2">
-            {chatInput.length}/500 characters
-          </p>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
-);
-}
-
