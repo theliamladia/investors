@@ -1307,7 +1307,8 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <span className="text-xs opacity-70">{timeStr}</span>
                     </div>
                     <p className="text-sm break-words">{msg.message}</p>
-       </div>
+            })
+            </div>
       </div>
     )}
 
@@ -1426,7 +1427,6 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
 </div>
 );
 }
-            })
           )}
         </div>
         <div className="p-4 border-t border-slate-700">
