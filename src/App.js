@@ -1254,8 +1254,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
         {/* ... leaderboard content ... */}
       </div>
     )}
-
-    {view === 'chat' && (
+{view === 'chat' && (
       <div className="bg-slate-800 rounded-lg border border-slate-700 flex flex-col h-[600px]">
         <div className="p-4 border-b border-slate-700">
           <h2 className="text-2xl font-bold">💬 Global Chat</h2>
@@ -1264,7 +1263,7 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
           </p>
         </div>
 
-     <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {chatMessages.length === 0 ? (
             <div className="text-center text-slate-400 py-8">
               <p className="text-4xl mb-2">💬</p>
@@ -1307,8 +1306,41 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
                       <span className="text-xs opacity-70">{timeStr}</span>
                     </div>
                     <p className="text-sm break-words">{msg.message}</p>
+                  </div>
+                </div>
+              );
             })
-            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-slate-700">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendChatMessage();
+                }
+              }}
+              placeholder="Type a message..."
+              maxLength={500}
+              className="flex-1 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-400"
+            />
+            <button
+              onClick={sendChatMessage}
+              disabled={!chatInput.trim()}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition"
+            >
+              Send
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            {chatInput.length}/500 characters
+          </p>
+        </div>
       </div>
     )}
 
@@ -1427,8 +1459,6 @@ const liveSelectedStock = selectedStock ? stocks.find(s => s.id === selectedStoc
 </div>
 );
 }
-          )}
-        </div>
         <div className="p-4 border-t border-slate-700">
           <div className="flex gap-2">
             <input
